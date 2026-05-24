@@ -1,12 +1,23 @@
 from __future__ import annotations
 import os
+import sys
 import uuid
 import json
 import shutil
+import logging
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
+
+# ── Ensure imports always resolve from this file's directory (backend/) ───────
+# This makes the app startable from ANY working directory (repo root, etc.)
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+log = logging.getLogger(__name__)
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +32,9 @@ from sorter import build_tabs
 from excel_writer import generate_workbook, dutch_date_filename
 from rapidfuzz import process, fuzz
 
-app = FastAPI(title="Dispatch Generator")
+log.info("✅ All modules imported successfully")
+
+app = FastAPI(title="Dispatch Generator", version="1.0.0")
 
 _ALLOWED_ORIGINS = [
     "https://dispatch.tmstry.com",
@@ -52,7 +65,22 @@ def _get_session(session_id: str) -> dict:
     return _sessions[session_id]
 
 
+# ── Startup logging ───────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def on_startup():
+    routes = [f"{m} {r.path}" for r in app.routes for m in getattr(r, "methods", [""])]
+    log.info("🚀 Dispatch backend started. Registered routes:")
+    for r in routes:
+        log.info("   %s", r)
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.get("/")
+def root():
+    return {"app": "Dispatch Generator", "status": "ok", "docs": "/docs"}
+
 
 @app.get("/health")
 def health():
