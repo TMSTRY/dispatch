@@ -22,9 +22,15 @@ from rapidfuzz import process, fuzz
 
 app = FastAPI(title="Dispatch Generator")
 
+_ALLOWED_ORIGINS = [
+    "https://dispatch.tmstry.com",
+    "https://dispatch-olive.vercel.app",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
