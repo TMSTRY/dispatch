@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+*.egg
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+.turbo/
+*.tsbuildinfo
+.env.local
+.env.*.local
+
+# System
+.DS_Store
+*.log
+tmp/
+/tmp/
+
+# IDE
+.vscode/
+.idea/
