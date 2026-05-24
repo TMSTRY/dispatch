@@ -39,6 +39,7 @@ app = FastAPI(title="Dispatch Generator", version="1.0.0")
 _ALLOWED_ORIGINS = [
     "https://dispatch.tmstry.com",
     "https://dispatch-olive.vercel.app",
+    "https://dispatch-zy1l.onrender.com",
     "http://localhost:3000",
 ]
 
