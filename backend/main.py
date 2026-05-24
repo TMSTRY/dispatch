@@ -54,7 +54,7 @@ app.add_middleware(
 # ── In-memory session store ───────────────────────────────────────────────────
 # { session_id: { "celbezetting": {...}, "dispatch_files": [...], "paleislijst": [...] } }
 _sessions: dict[str, dict] = {}
-_jobs: dict[str, bytes] = {}  # job_id → xlsx bytes
+_jobs: dict[str, dict] = {}  # job_id → {"bytes": ..., "filename": ...}
 
 TMP_DIR = Path("/tmp/dispatch_sessions")
 TMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -239,8 +239,8 @@ async def generate(session_id: str, request: GenerateRequest):
     xlsx_bytes = buf.read()
 
     job_id = str(uuid.uuid4())
-    _jobs[job_id] = xlsx_bytes
     filename = dutch_date_filename(target_date)
+    _jobs[job_id] = {"bytes": xlsx_bytes, "filename": filename}
 
     return GenerateResponse(
         job_id=job_id,
@@ -256,11 +256,18 @@ async def generate(session_id: str, request: GenerateRequest):
 
 @app.get("/download/{job_id}")
 def download(job_id: str):
-    xlsx = _jobs.get(job_id)
-    if not xlsx:
+    from urllib.parse import quote
+    job = _jobs.get(job_id)
+    if not job:
         raise HTTPException(status_code=404, detail="Download niet gevonden of verlopen")
+    filename = job["filename"]
+    # RFC 5987: supports full Unicode filenames (Donderdag 14 Mei 2026.xlsx etc.)
+    encoded = quote(filename, safe="")
     return StreamingResponse(
-        BytesIO(xlsx),
+        BytesIO(job["bytes"]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="dispatch.xlsx"'},
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded}",
+            "X-Filename": filename,
+        },
     )

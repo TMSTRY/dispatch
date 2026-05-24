@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { GenerateResult } from "@/lib/types";
 import { downloadUrl } from "@/lib/api";
 
@@ -8,19 +9,52 @@ interface Props {
 }
 
 export default function ResultsPreview({ result, onReset }: Props) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const res = await fetch(downloadUrl(result.job_id));
+      if (!res.ok) throw new Error("Download mislukt");
+      // Prefer filename from Content-Disposition header, fall back to result.filename
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      const plainMatch = disposition.match(/filename="([^"]+)"/i);
+      const xFilename = res.headers.get("X-Filename");
+      const filename =
+        utf8Match ? decodeURIComponent(utf8Match[1])
+        : xFilename ? xFilename
+        : plainMatch ? plainMatch[1]
+        : result.filename;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Download mislukt. Probeer opnieuw.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Download */}
       <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
         <p className="text-green-800 font-semibold text-lg mb-1">Dispatchlijst gegenereerd</p>
         <p className="text-green-600 text-sm mb-4">{result.filename}</p>
-        <a
-          href={downloadUrl(result.job_id)}
-          download={result.filename}
-          className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-3 text-sm transition"
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="inline-block bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold rounded-lg px-6 py-3 text-sm transition cursor-pointer"
         >
-          Download XLSX
-        </a>
+          {downloading ? "Bezig met downloaden..." : "Download XLSX"}
+        </button>
       </div>
 
       {/* Corrections */}
