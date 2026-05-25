@@ -257,11 +257,19 @@ async def generate(session_id: str, request: GenerateRequest):
         if row.get("dual_uur"):
             row["uur"] = row["uur_we"] if use_weekend else row["uur_wd"]
 
+    # Diagnostic logging — visible in Render logs after each generate
+    from collections import Counter
+    src_counts = Counter(r.get("source", "?") for r in all_rows)
+    log.info("📋 Bronnen (%d rijen totaal): %s", len(all_rows), dict(src_counts))
+    best_counts = Counter(r.get("bestemming", "") or "" for r in all_rows)
+    log.info("🏷️  Bestemmingen: %s", dict(best_counts))
+
     # Match against celbezetting
     matched, corrections, unmatched = match_and_correct(all_rows, cel_data)
 
     # Build tabs
     tabs = build_tabs(matched)
+    log.info("📑 Verzorging tab: %d rijen", len(tabs.get("verzorging", [])))
 
     # Generate workbook
     wb = generate_workbook(tabs, target_date)

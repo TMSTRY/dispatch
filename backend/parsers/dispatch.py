@@ -157,8 +157,15 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             if naam_raw is None or str(naam_raw).strip() in ("", "\xa0"):
                 continue
 
-            cel_val  = normalize_cell(row[idx_cel]  if len(row) > idx_cel  else None)
             naam_val = str(naam_raw).strip()
+
+            # Skip placeholder / template rows where the naam cell contains a
+            # column header label (e.g. a repeated "Naam" row at the bottom of
+            # a sheet used as a manual-entry template).
+            if naam_val.lower() in {"naam", "name", "voornaam", "firstname"}:
+                continue
+
+            cel_val  = normalize_cell(row[idx_cel]  if len(row) > idx_cel  else None)
             voor_raw = row[idx_voor] if len(row) > idx_voor else None
             voor_val = str(voor_raw).strip() if voor_raw else None
             best_raw = row[idx_best] if len(row) > idx_best else None
