@@ -34,8 +34,8 @@ def _is_blank_row(row) -> bool:
 # Some services omit uur/bestemming; we infer them from the filename.
 _FALLBACK_RULES: list[tuple[list[str], time, str]] = [
     # keywords (all must appear in lowercased filename)  →  uur, bestemming
-    (["betekening"],             time(9, 0),  "Betekening directeur"),
-    (["griffie"],                time(8, 30), "Griffie"),
+    (["betekening"],  time(9, 0),  "Betekening directeur"),
+    (["griffie"],     time(8, 30), "Griffie"),
 ]
 
 
@@ -48,6 +48,28 @@ def _detect_fallbacks(source_name: str) -> tuple[time | None, str]:
     return None, ""
 
 
+# ── Keuken dual-time detection ────────────────────────────────────────────────
+# The keuken file has two time columns:
+#   col A → "MA TOT VRIJ"  (weekday time)
+#   col B → "ZA, ZO, FD"  (weekend / holiday time)
+# Both are stored in each row; main.py picks the right one at generate time.
+
+def _detect_keuken_cols(col_map: dict) -> tuple[int | None, int | None]:
+    """
+    Detect keuken-style weekday/weekend time columns from the header col_map.
+    Returns (idx_weekday, idx_weekend) or (None, None) if not a keuken file.
+    """
+    idx_wd = None  # MA TOT VRIJ
+    idx_we = None  # ZA, ZO, FD
+    for key, idx in col_map.items():
+        k = key.lower()
+        if "ma" in k and "vrij" in k:
+            idx_wd = idx
+        elif "za" in k and ("zo" in k or "fd" in k):
+            idx_we = idx
+    return idx_wd, idx_we
+
+
 def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dict]:
     wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
 
@@ -58,7 +80,7 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
 
-        # Find header row (contains naam + bestemming)
+        # Find header row (must contain "naam" + "bestemming")
         header_row_idx = None
         col_map = {}
         for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
@@ -69,7 +91,7 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                     lv = str(val).strip().lower() if val is not None else ""
                     if lv:
                         col_map[lv] = j
-                # uur is always col 0 (may not be labelled in header)
+                # "uur" fallback only if no dedicated time column found yet
                 if "uur" not in col_map:
                     col_map["uur"] = 0
                 break
@@ -77,8 +99,12 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         if header_row_idx is None:
             continue  # sheet has no recognizable dispatch data
 
-        idx_uur = col_map.get("uur", 0)
-        idx_cel = col_map.get("celnr", 1)
+        # Check for keuken dual-time layout
+        idx_uur_wd, idx_uur_we = _detect_keuken_cols(col_map)
+        is_keuken = idx_uur_wd is not None and idx_uur_we is not None
+
+        idx_uur  = col_map.get("uur", 0)
+        idx_cel  = col_map.get("celnr", 1)
         idx_naam = col_map.get("naam", 2)
         idx_voor = col_map.get("voornaam", 3)
         idx_best = col_map.get("bestemming", 4)
@@ -91,8 +117,7 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             if naam_raw is None or str(naam_raw).strip() in ("", "\xa0"):
                 continue
 
-            uur_val  = _to_time(row[idx_uur]  if len(row) > idx_uur  else None)
-            cel_val  = normalize_cell(row[idx_cel] if len(row) > idx_cel else None)
+            cel_val  = normalize_cell(row[idx_cel]  if len(row) > idx_cel  else None)
             naam_val = str(naam_raw).strip()
             voor_raw = row[idx_voor] if len(row) > idx_voor else None
             voor_val = str(voor_raw).strip() if voor_raw else None
@@ -104,19 +129,37 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             if best_val in ("\xa0",):
                 best_val = ""
 
-            # Apply filename-based fallbacks for missing uur / bestemming
-            if uur_val is None and fallback_uur is not None:
-                uur_val = fallback_uur
-            if not best_val and fallback_best:
-                best_val = fallback_best
+            if is_keuken:
+                # Store both times; main.py resolves which to use based on target date
+                uur_wd = _to_time(row[idx_uur_wd] if len(row) > idx_uur_wd else None)
+                uur_we = _to_time(row[idx_uur_we] if len(row) > idx_uur_we else None)
+                rows_out.append({
+                    "uur":       None,   # resolved later
+                    "uur_wd":    uur_wd,
+                    "uur_we":    uur_we,
+                    "dual_uur":  True,
+                    "celnr":     cel_val,
+                    "naam":      naam_val,
+                    "voornaam":  voor_val,
+                    "bestemming": best_val or fallback_best,
+                    "source":    source_name,
+                })
+            else:
+                uur_val = _to_time(row[idx_uur] if len(row) > idx_uur else None)
 
-            rows_out.append({
-                "uur":        uur_val,
-                "celnr":      cel_val,
-                "naam":       naam_val,
-                "voornaam":   voor_val,
-                "bestemming": best_val,
-                "source":     source_name,
-            })
+                # Apply filename-based fallbacks for missing uur / bestemming
+                if uur_val is None and fallback_uur is not None:
+                    uur_val = fallback_uur
+                if not best_val and fallback_best:
+                    best_val = fallback_best
+
+                rows_out.append({
+                    "uur":        uur_val,
+                    "celnr":      cel_val,
+                    "naam":       naam_val,
+                    "voornaam":   voor_val,
+                    "bestemming": best_val,
+                    "source":     source_name,
+                })
 
     return rows_out

@@ -5,7 +5,7 @@ import uuid
 import json
 import shutil
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -31,8 +31,32 @@ from matcher import match_and_correct, enrich_manual_entries
 from sorter import build_tabs
 from excel_writer import generate_workbook, dutch_date_filename
 from rapidfuzz import process, fuzz
+from dateutil.easter import easter
 
 log.info("✅ All modules imported successfully")
+
+
+# ── Belgian public holiday detection ─────────────────────────────────────────
+
+def _belgian_holidays(year: int) -> set[date]:
+    e = easter(year)
+    return {
+        date(year, 1,  1),           # Nieuwjaar
+        e + timedelta(days=1),       # Paasmaandag
+        date(year, 5,  1),           # Dag van de Arbeid
+        e + timedelta(days=39),      # Hemelvaartsdag
+        e + timedelta(days=50),      # Pinkstermaandag
+        date(year, 7, 21),           # Nationale feestdag
+        date(year, 8, 15),           # OLV Hemelvaart
+        date(year, 11,  1),          # Allerheiligen
+        date(year, 11, 11),          # Wapenstilstand
+        date(year, 12, 25),          # Kerstmis
+    }
+
+
+def _is_weekend_or_holiday(d: date) -> bool:
+    """True for Saturday, Sunday, or Belgian public holiday."""
+    return d.weekday() >= 5 or d in _belgian_holidays(d.year)
 
 app = FastAPI(title="Dispatch Generator", version="1.0.0")
 
@@ -204,6 +228,15 @@ async def generate(session_id: str, request: GenerateRequest):
     if not dispatch_files and not request.manual_entries:
         raise HTTPException(status_code=422, detail="Geen dispatch-bestanden of manuele invoer")
 
+    # Parse target date first — needed to resolve keuken dual-time rows
+    try:
+        target_date = date.fromisoformat(request.target_date)
+    except ValueError:
+        target_date = date.today()
+
+    use_weekend = _is_weekend_or_holiday(target_date)
+    log.info("Target date: %s | weekend/feestdag: %s", target_date, use_weekend)
+
     # Collect all rows
     all_rows: list[dict] = []
     for df in dispatch_files:
@@ -219,17 +252,16 @@ async def generate(session_id: str, request: GenerateRequest):
     )
     all_rows.extend(manual_rows)
 
+    # Resolve keuken dual-time rows: pick weekday or weekend column
+    for row in all_rows:
+        if row.get("dual_uur"):
+            row["uur"] = row["uur_we"] if use_weekend else row["uur_wd"]
+
     # Match against celbezetting
     matched, corrections, unmatched = match_and_correct(all_rows, cel_data)
 
     # Build tabs
     tabs = build_tabs(matched)
-
-    # Parse target date
-    try:
-        target_date = date.fromisoformat(request.target_date)
-    except ValueError:
-        target_date = date.today()
 
     # Generate workbook
     wb = generate_workbook(tabs, target_date)
