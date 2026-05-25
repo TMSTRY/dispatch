@@ -4,6 +4,9 @@ from parsers.normalizer import get_section
 
 _VERZORGING_KEYWORDS = ("verzorging", "van damme", "tiberghien")
 
+# BD (Beperkte Detentie): cells 58–70 are always mapped to cell 62 in Verzorging.
+_BD_RANGE = range(58, 71)
+
 
 def _sort_key_time(row: dict):
     t = row.get("uur")
@@ -45,7 +48,9 @@ def build_tabs(rows: list[dict]) -> dict[str, list[dict]]:
 
         # Route to lijst disp or verzorging
         if is_verzorging(row):
-            tabs["verzorging"].append(row)
+            # BD cells always get celnr 62 on the Verzorging tab
+            verzorg_row = {**row, "celnr": 62} if celnr in _BD_RANGE else row
+            tabs["verzorging"].append(verzorg_row)
         else:
             tabs["lijst disp"].append(row)
 

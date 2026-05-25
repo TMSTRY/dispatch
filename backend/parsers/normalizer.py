@@ -39,7 +39,7 @@ def normalize_key(naam: str, voornaam: str | None) -> str:
 def get_section(celnr: int | None) -> int | None:
     if celnr is None:
         return None
-    if 0 <= celnr <= 60:
+    if 0 <= celnr <= 57:   # vrouwen; 58-70 is BD (Beperkte Detentie) — no section tab
         return 10
     if 100 <= celnr <= 130:
         return 1

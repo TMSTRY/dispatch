@@ -67,6 +67,32 @@ def match_and_correct(
             if result:
                 record = lookup[result[0]]
 
+        # 3rd fallback: surname-only lookup with voornaam disambiguation.
+        # Handles cases like TAVERAS JOHN vs TAVERAS JHONSALIN where the
+        # given names share no common tokens (token_set_ratio ~ 75%).
+        # If exactly one person exists with that surname, accept unconditionally.
+        # If multiple people share the surname, pick the one whose voornaam has
+        # the highest character-level similarity — but only if it scores ≥ 40%.
+        if record is None:
+            naam_only = celbezetting.get("naam_only_lookup", {})
+            naam_norm = normalize_name(potential_naam)
+            candidates = naam_only.get(naam_norm, [])
+            if len(candidates) == 1:
+                record = candidates[0]
+            elif candidates:
+                best = max(
+                    candidates,
+                    key=lambda c: fuzz.ratio(
+                        normalize_name(potential_voor),
+                        normalize_name(c["voornaam"]),
+                    ),
+                )
+                if fuzz.ratio(
+                    normalize_name(potential_voor),
+                    normalize_name(best["voornaam"]),
+                ) >= 40:
+                    record = best
+
         if record is None:
             unmatched.append(UnmatchedEntry(
                 naam=naam,

@@ -34,6 +34,7 @@ def parse_celbezetting(file_bytes: bytes) -> dict:
     idx_exstat = col_map.get("ext.stat.", 6)
 
     lookup: dict[str, dict] = {}
+    naam_only_lookup: dict[str, list[dict]] = {}
     autocomplete: list[dict] = []
 
     for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
@@ -61,6 +62,12 @@ def parse_celbezetting(file_bytes: bytes) -> dict:
         lookup[key] = record
         autocomplete.append(record)
 
+        # Index by surname only for lenient fallback matching in matcher.py
+        naam_norm = normalize_name(naam_str)
+        naam_only_lookup.setdefault(naam_norm, [])
+        if record not in naam_only_lookup[naam_norm]:
+            naam_only_lookup[naam_norm].append(record)
+
         # Also index by first voornaam only.
         # Dispatch files often contain only the first given name while the
         # celbezetting stores all given names (e.g. "VERA FRANCOISE GEORGINE").
@@ -71,4 +78,4 @@ def parse_celbezetting(file_bytes: bytes) -> dict:
             if short_key not in lookup:   # don't overwrite on collision
                 lookup[short_key] = record
 
-    return {"lookup": lookup, "autocomplete": autocomplete}
+    return {"lookup": lookup, "autocomplete": autocomplete, "naam_only_lookup": naam_only_lookup}
