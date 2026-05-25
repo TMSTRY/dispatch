@@ -150,28 +150,30 @@ export default function Home() {
   // ── Results page ──────────────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-        {/* Prison hero */}
-        <div className="relative h-64 md:h-80 overflow-hidden flex-shrink-0">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        {/* Prison hero — tall so the building is clearly visible */}
+        <div className="relative overflow-hidden" style={{ height: "62vh", minHeight: "460px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/hero-prison.PNG"
             alt=""
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
-          {/* Light mode overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white opacity-100 dark:opacity-0 transition-opacity duration-300" />
-          {/* Dark mode overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-gray-900 opacity-0 dark:opacity-100 transition-opacity duration-300" />
-          {/* Title on image */}
-          <div className="absolute bottom-5 inset-x-0 text-center">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow-lg">
+          {/* Dark mode only: replace the baked-in white fade with a dark one */}
+          <div
+            className="absolute inset-x-0 bottom-0 opacity-0 dark:opacity-100 transition-opacity duration-300"
+            style={{ height: "55%", background: "linear-gradient(to top, rgb(17,24,39) 0%, transparent 100%)" }}
+          />
+          {/* Title — sits in the middle of the image, well above the overlap zone */}
+          <div className="absolute inset-x-0 text-center" style={{ bottom: "38%" }}>
+            <h1 className="text-3xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
               Dispatch Generator
             </h1>
           </div>
         </div>
 
-        <div className="flex-1 py-8 px-4">
+        {/* Cards pulled up so they overlap the bottom of the hero */}
+        <div className="relative -mt-28 px-4 pb-12">
           <div className="max-w-4xl mx-auto">
             <ResultsPreview result={result} onReset={reset} />
           </div>
