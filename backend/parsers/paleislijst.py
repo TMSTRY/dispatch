@@ -5,11 +5,15 @@ from openpyxl import load_workbook
 from .normalizer import normalize_cell
 
 
-_WEIGER_TERMS    = ("weigert", "weigering", "refus", "refuse")
-_PALEIS_SKIP     = {"1erit", "1ste rit", "1e rit"}   # section dividers to skip
-_UITHALING_HDR   = {"uithalingen", "uithalingen:"}    # marks start of uithaling section
+_WEIGER_TERMS    = ("weigert", "weigering", "refus", "refuse", "wenst niet te verschijnen")
+_PALEIS_SKIP     = {"1erit", "1ste rit", "1e rit"}
+_UITHALING_HDR   = {"uithalingen", "uithalingen:"}
 _VIRTUAL_CELLS   = {"80000", "70000"}
 _MEDISCH_TERMS   = ("medisch", "medical", "medic")
+
+# All recognised column-name aliases for the cell-number column.
+# The paleislijst is exported by different systems with varying headers.
+_CEL_ALIASES     = ("celnummer", "cell", "cel", "cellnr")
 
 
 def _to_time(val) -> time | None:
@@ -26,16 +30,31 @@ def _is_zero_time(t: time | None) -> bool:
     return t is not None and t.hour == 0 and t.minute == 0
 
 
+def _row_has_weiger(row) -> bool:
+    """Return True if any cell in the row contains a refusal keyword."""
+    for cell in row:
+        if cell is None:
+            continue
+        s = str(cell).lower()
+        if any(term in s for term in _WEIGER_TERMS):
+            return True
+    return False
+
+
 def parse_paleislijst(file_bytes: bytes) -> list[dict]:
     wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
-    # Find header row
+    # ── Find header row ───────────────────────────────────────────────────────
+    # Accept any row that contains "naam" AND at least one cell-alias.
     header_row_idx = None
-    col_map = {}
+    col_map: dict[str, int] = {}
+
     for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
         row_lower = [str(c).strip().lower() if c is not None else "" for c in row]
-        if "naam" in row_lower and "celnummer" in row_lower:
+        has_naam = "naam" in row_lower
+        has_cel  = any(alias in row_lower for alias in _CEL_ALIASES)
+        if has_naam and has_cel:
             header_row_idx = i
             for j, val in enumerate(row):
                 if val is not None:
@@ -43,18 +62,27 @@ def parse_paleislijst(file_bytes: bytes) -> list[dict]:
             break
 
     if header_row_idx is None:
-        raise ValueError("Geen header-rij gevonden in paleislijst (verwacht: Naam, Celnummer)")
+        raise ValueError(
+            "Geen header-rij gevonden in paleislijst "
+            "(verwacht: Naam + Celnummer / Cell / Cel)"
+        )
 
-    idx_naam        = col_map.get("naam",        0)
-    idx_voor        = col_map.get("voornaam",    1)
-    idx_cel         = col_map.get("celnummer",   3)
-    idx_onderwerp   = col_map.get("onderwerp",   4)
-    idx_type        = col_map.get("type",        5)
-    idx_start       = col_map.get("start",       7)
-    idx_handtekening= col_map.get("handtekening",9)
+    # ── Column indices (robust: try multiple aliases) ─────────────────────────
+    def _col(*aliases: str, default: int = 0) -> int:
+        for a in aliases:
+            if a in col_map:
+                return col_map[a]
+        return default
+
+    idx_naam         = _col("naam",          default=0)
+    idx_voor         = _col("voornaam",       default=1)
+    idx_cel          = _col(*_CEL_ALIASES,    default=4)
+    idx_onderwerp    = _col("onderwerp", "instantie", default=None)  # type: ignore[arg-type]
+    idx_type         = _col("type",           default=None)          # type: ignore[arg-type]
+    idx_start        = _col("start", "uur",   default=7)
 
     rows_out: list[dict] = []
-    section = "paleis"   # switches to "uithaling" when we hit the UITHALINGEN header
+    section = "paleis"   # switches to "uithaling" when UITHALINGEN header is hit
 
     for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         naam_raw = row[idx_naam] if len(row) > idx_naam else None
@@ -67,40 +95,37 @@ def parse_paleislijst(file_bytes: bytes) -> list[dict]:
 
         naam_lower = naam_str.lower()
 
-        # Section header: switch to uithaling mode and skip the label row
+        # Section header: switch to uithaling mode
         if naam_lower in _UITHALING_HDR:
             section = "uithaling"
             continue
 
-        # Skip paleis divider labels (e.g. "1erit")
+        # Skip paleis-internal divider labels
         if naam_lower in _PALEIS_SKIP:
             continue
 
         # ── Filters ──────────────────────────────────────────────────────────
 
-        # Skip virtual / placeholder cell numbers
+        # Refusal: check the entire row (column position varies per export)
+        if _row_has_weiger(row):
+            continue
+
+        # Virtual / placeholder cell numbers
         cel_raw = row[idx_cel] if len(row) > idx_cel else None
         cel_str = str(cel_raw).strip() if cel_raw is not None else ""
         if cel_str in _VIRTUAL_CELLS:
             continue
 
-        # Skip rows with no valid cell number at all
+        # No valid cell number at all
         cel_int = normalize_cell(cel_raw)
         if cel_int is None:
             continue
 
-        # Skip 00:00 times
+        # 00:00 time → person is not being transported
         start_raw = row[idx_start] if len(row) > idx_start else None
         uur_val = _to_time(start_raw)
         if _is_zero_time(uur_val):
             continue
-
-        # Skip weigeringen
-        handtekening = row[idx_handtekening] if len(row) > idx_handtekening else None
-        if handtekening:
-            htk_lower = str(handtekening).lower()
-            if any(term in htk_lower for term in _WEIGER_TERMS):
-                continue
 
         # ── Voornaam ─────────────────────────────────────────────────────────
         voor_raw = row[idx_voor] if len(row) > idx_voor else None
@@ -108,13 +133,14 @@ def parse_paleislijst(file_bytes: bytes) -> list[dict]:
         if voor_str == "":
             voor_str = None
 
-        # ── Bestemming — based on section ────────────────────────────────────
+        # ── Bestemming — section-based ────────────────────────────────────────
         if section == "uithaling":
-            onderwerp = row[idx_onderwerp] if len(row) > idx_onderwerp else None
-            type_val  = row[idx_type]      if len(row) > idx_type      else None
-            combined  = " ".join(
-                str(v).lower() for v in (onderwerp, type_val) if v
-            )
+            # Check onderwerp/type columns for "medisch" if they exist
+            combined_parts = []
+            for idx in (idx_onderwerp, idx_type):
+                if idx is not None and len(row) > idx and row[idx]:
+                    combined_parts.append(str(row[idx]).lower())
+            combined = " ".join(combined_parts)
             if any(term in combined for term in _MEDISCH_TERMS):
                 bestemming = "medische uithaling"
             else:
