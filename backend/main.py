@@ -183,9 +183,12 @@ def autocomplete(session_id: str, q: str = ""):
     autocomplete_list = cel_data.get("autocomplete", [])
 
     results = []
+    seen_keys: set[str] = set()  # track record["key"] values to avoid duplicates
+
     for record in autocomplete_list:
         key = record["key"]
-        if q_norm in key:
+        if q_norm in key and key not in seen_keys:
+            seen_keys.add(key)
             results.append({
                 "naam": record["naam"],
                 "voornaam": record["voornaam"],
@@ -199,19 +202,18 @@ def autocomplete(session_id: str, q: str = ""):
     if len(results) < 3 and autocomplete_list:
         all_keys = [r["key"] for r in autocomplete_list]
         fuzzy = process.extract(q_norm, all_keys, scorer=fuzz.partial_ratio, limit=8, score_cutoff=70)
-        seen_keys = {r["key"] for r in results}
         key_to_record = {r["key"]: r for r in autocomplete_list}
         for match_key, score, _ in fuzzy:
             if match_key not in seen_keys:
                 rec = key_to_record.get(match_key)
                 if rec:
+                    seen_keys.add(match_key)
                     results.append({
                         "naam": rec["naam"],
                         "voornaam": rec["voornaam"],
                         "cel": rec["cel"],
                         "label": f"{rec['naam']} — {rec['voornaam']} — {rec['cel']}",
                     })
-                    seen_keys.add(match_key)
 
     return {"results": results[:10]}
 
