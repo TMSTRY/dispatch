@@ -30,6 +30,47 @@ def _is_blank_row(row) -> bool:
     )
 
 
+# ── Name splitting ───────────────────────────────────────────────────────────
+# Some services (e.g. zorg) put the full name in a single "naam" column,
+# formatted as "LASTNAME [LASTNAME2...] Firstname [Middlenames...]".
+# We detect this by the ALL-CAPS / mixed-case boundary and split accordingly.
+# Middle names after the first name are dropped (user requirement).
+
+def _try_split_full_name(naam: str, voornaam: str | None) -> tuple[str, str | None]:
+    """
+    If voornaam is absent and naam looks like 'LASTNAME Firstname ...',
+    split at the first non-ALL-CAPS token.
+
+    Examples:
+      'MAES Saskia'              → ('MAES', 'Saskia')
+      'PINTO FERREIRA Dominique' → ('PINTO FERREIRA', 'Dominique')
+      'SCHEERS Zion Gonda Marcel'→ ('SCHEERS', 'Zion')   # middle names dropped
+      'BEN KHEDIJA Amin'         → ('BEN KHEDIJA', 'Amin')
+      'VAN MOOK'                 → ('VAN MOOK', None)    # all caps → no split
+    """
+    if voornaam:                      # already split — leave unchanged
+        return naam, voornaam
+    if " " not in naam:               # single token — nothing to split
+        return naam, voornaam
+
+    tokens = naam.strip().split()
+    naam_parts: list[str] = []
+    first_name: str | None = None
+
+    for token in tokens:
+        if token.isupper():           # ALL-CAPS → part of surname
+            naam_parts.append(token)
+        else:                         # mixed-case → first name, stop here
+            first_name = token
+            break
+
+    # Only split when we have both a clear surname AND a clear first name
+    if naam_parts and first_name:
+        return " ".join(naam_parts), first_name
+
+    return naam, voornaam             # pattern unclear → leave unchanged
+
+
 # ── Filename-based fallback detection ────────────────────────────────────────
 # Some services omit uur/bestemming; we infer them from the filename.
 _FALLBACK_RULES: list[tuple[list[str], time, str]] = [
@@ -128,6 +169,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 voor_val = None
             if best_val in ("\xa0",):
                 best_val = ""
+
+            # Split combined "LASTNAME Firstname" → separate naam / voornaam
+            naam_val, voor_val = _try_split_full_name(naam_val, voor_val)
 
             if is_keuken:
                 # Store both times; main.py resolves which to use based on target date
