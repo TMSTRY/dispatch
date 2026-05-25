@@ -178,7 +178,7 @@ def generate_workbook(tabs: dict[str, list[dict]], target_date: date) -> Workboo
     # Tab order: lijst disp, Verzorging, sectie 1..10, sectie 11
     sheet_defs = [
         ("lijst disp", "DISPATCHER", True, False),
-        ("Verzorging", "VERZORGING", False, True),
+        ("verzorging", "VERZORGING", False, True),  # key must match build_tabs dict (lowercase)
     ] + [
         (f"sectie {i}", f"SECTIE {i}", False, False) for i in range(1, 12)
     ]

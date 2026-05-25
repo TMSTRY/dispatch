@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { VERSION } from "@/lib/version";
 
 export default function AuthGate({ onAuth }: { onAuth: () => void }) {
   const [pw, setPw] = useState("");
@@ -84,6 +85,7 @@ export default function AuthGate({ onAuth }: { onAuth: () => void }) {
           </div>
         </div>
       </div>
+      <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
     </div>
   );
 }

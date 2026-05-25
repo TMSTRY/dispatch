@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import AuthGate from "@/components/AuthGate";
+import { VERSION } from "@/lib/version";
 import DropZone from "@/components/DropZone";
 import ManualEntryTable from "@/components/ManualEntryTable";
 import ResultsPreview from "@/components/ResultsPreview";
@@ -178,11 +179,12 @@ export default function Home() {
         </div>
 
         {/* Cards pulled up so they overlap the bottom of the hero */}
-        <div className="relative -mt-28 px-4 pb-12">
+        <div className="relative -mt-28 px-4 pb-6">
           <div className="max-w-4xl mx-auto">
             <ResultsPreview result={result} onReset={reset} />
           </div>
         </div>
+        <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
       </div>
     );
   }
@@ -217,7 +219,7 @@ export default function Home() {
       </div>
 
       {/* Cards pulled up so they overlap the bottom of the hero */}
-      <div className="relative -mt-20 px-4 pb-12">
+      <div className="relative -mt-20 px-4 pb-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
@@ -344,6 +346,7 @@ export default function Home() {
           </Card>
         </div>
       </div>
+      <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
     </div>
   );
 }
