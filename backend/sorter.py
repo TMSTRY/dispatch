@@ -4,6 +4,10 @@ from parsers.normalizer import get_section
 
 _VERZORGING_KEYWORDS = ("verzorging", "van damme", "tiberghien")
 
+# Source-file keywords: if the uploaded filename contains any of these terms
+# the entire file is treated as verzorging (even when bestemming is blank).
+_VERZORGING_SOURCE_KEYWORDS = ("zorg", "verzorging", "infirmerie", "medisch")
+
 # BD (Beperkte Detentie): cells 58–70 are always mapped to cell 62 in Verzorging.
 _BD_RANGE = range(58, 71)
 
@@ -24,8 +28,19 @@ def _sort_key_time_cel_dest(row: dict):
 
 
 def is_verzorging(row: dict) -> bool:
+    """
+    Return True when this row belongs on the Verzorging tab.
+
+    Two signals are checked:
+    1. The bestemming contains a known medical keyword (e.g. "van damme").
+    2. The source filename contains a zorg-related term — handles dispatch
+       files where the bestemming column is empty or uses unknown doctor names.
+    """
     dest = str(row.get("bestemming", "")).lower()
-    return any(kw in dest for kw in _VERZORGING_KEYWORDS)
+    if any(kw in dest for kw in _VERZORGING_KEYWORDS):
+        return True
+    source = str(row.get("source", "")).lower()
+    return any(kw in source for kw in _VERZORGING_SOURCE_KEYWORDS)
 
 
 def build_tabs(rows: list[dict]) -> dict[str, list[dict]]:
