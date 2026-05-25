@@ -45,7 +45,10 @@ export default function DropZone({
       onDrop={handleDrop}
       className={`
         border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition
-        ${dragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400 bg-white"}
+        ${dragging
+          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+          : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-700/40"
+        }
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
       `}
     >
@@ -57,8 +60,8 @@ export default function DropZone({
         onChange={handleChange}
         className="hidden"
       />
-      <p className="text-sm text-gray-600 font-medium">{label}</p>
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{label}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
         {uploading ? "Bezig met uploaden..." : "Sleep hier of klik om te kiezen (.xlsx)"}
       </p>
     </div>

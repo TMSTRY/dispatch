@@ -99,7 +99,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const data = await uploadPaleislijst(sessionId, files[0]);
+      await uploadPaleislijst(sessionId, files[0]);
       setPaleisFile(files[0].name);
     } catch (e: any) {
       setError(e.message);
@@ -147,141 +147,190 @@ export default function Home() {
     return <AuthGate onAuth={() => setAuthed(true)} />;
   }
 
+  // ── Results page ──────────────────────────────────────────────────────────────
   if (result) {
     return (
-      <main className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Dispatch Generator</h1>
-          <ResultsPreview result={result} onReset={reset} />
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+        {/* Prison hero */}
+        <div className="relative h-64 md:h-80 overflow-hidden flex-shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-prison.PNG"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          {/* Light mode overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white opacity-100 dark:opacity-0 transition-opacity duration-300" />
+          {/* Dark mode overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-gray-900 opacity-0 dark:opacity-100 transition-opacity duration-300" />
+          {/* Title on image */}
+          <div className="absolute bottom-5 inset-x-0 text-center">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow-lg">
+              Dispatch Generator
+            </h1>
+          </div>
         </div>
-      </main>
+
+        <div className="flex-1 py-8 px-4">
+          <div className="max-w-4xl mx-auto">
+            <ResultsPreview result={result} onReset={reset} />
+          </div>
+        </div>
+      </div>
     );
   }
 
+  // ── Upload page ───────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800 text-center">Dispatch Generator</h1>
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+      {/* Aerial hero */}
+      <div className="relative h-52 md:h-64 overflow-hidden flex-shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-aerial.PNG"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* Light mode overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white opacity-100 dark:opacity-0 transition-opacity duration-300" />
+        {/* Dark mode overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-gray-900 opacity-0 dark:opacity-100 transition-opacity duration-300" />
+        {/* Title on image */}
+        <div className="absolute bottom-4 inset-x-0 text-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow-lg">
+            Dispatch Generator
+          </h1>
+        </div>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-700 text-sm">
-            {error}
-            <button onClick={() => setError(null)} className="ml-3 text-red-500 font-bold">×</button>
-          </div>
-        )}
+      <div className="flex-1 py-6 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="ml-3 text-red-500 dark:text-red-400 font-bold leading-none">×</button>
+            </div>
+          )}
 
-        {/* Step 1 — Celbezetting */}
-        <Card step="1" title="Celbezetting" required>
-          {celFile ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-green-800">{celFile}</p>
-                <p className="text-xs text-green-600">{celCount} gedetineerden geladen</p>
+          {/* Step 1 — Celbezetting */}
+          <Card step="1" title="Celbezetting" required>
+            {celFile ? (
+              <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-300">{celFile}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">{celCount} gedetineerden geladen</p>
+                </div>
+                <button
+                  onClick={() => { setCelFile(null); setCelCount(null); }}
+                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 text-xs underline"
+                >
+                  Vervangen
+                </button>
               </div>
-              <button
-                onClick={() => { setCelFile(null); setCelCount(null); }}
-                className="text-green-600 hover:text-green-800 text-xs underline"
-              >
-                Vervangen
-              </button>
-            </div>
-          ) : (
-            <DropZone
-              label="Upload celbezetting (.xlsx)"
-              onFiles={handleCelbezetting}
-              uploading={loading}
-              disabled={loading}
-            />
-          )}
-        </Card>
+            ) : (
+              <DropZone
+                label="Upload celbezetting (.xlsx)"
+                onFiles={handleCelbezetting}
+                uploading={loading}
+                disabled={loading}
+              />
+            )}
+          </Card>
 
-        {/* Step 2 — Dispatch files */}
-        <Card step="2" title="Dispatch-bestanden" required>
-          <DropZone
-            label="Upload dispatch-bestanden (.xlsx)"
-            multiple
-            onFiles={handleDispatch}
-            uploading={loading}
-            disabled={loading || !celFile}
-          />
-          {dispatchFiles.length > 0 && (
-            <ul className="mt-3 space-y-1">
-              {dispatchFiles.map((f, i) => (
-                <li key={i} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm">
-                  <span className="text-gray-700">{f.filename} <span className="text-gray-400 text-xs">({f.rows} rijen)</span></span>
-                  <button
-                    onClick={() => handleRemoveDispatch(i)}
-                    className="text-red-400 hover:text-red-600 text-xs"
-                  >
-                    Verwijder
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        {/* Step 3 — Paleislijst */}
-        <Card step="3" title="Paleislijst (optioneel)">
-          {paleisFile ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-              <p className="text-sm font-medium text-green-800">{paleisFile}</p>
-              <button
-                onClick={() => setPaleisFile(null)}
-                className="text-green-600 hover:text-green-800 text-xs underline"
-              >
-                Vervangen
-              </button>
-            </div>
-          ) : (
+          {/* Step 2 — Dispatch files */}
+          <Card step="2" title="Dispatch-bestanden" required>
             <DropZone
-              label="Upload paleislijst (.xlsx) — optioneel"
-              onFiles={handlePaleislijst}
+              label="Upload dispatch-bestanden (.xlsx)"
+              multiple
+              onFiles={handleDispatch}
               uploading={loading}
               disabled={loading || !celFile}
             />
-          )}
-        </Card>
+            {dispatchFiles.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {dispatchFiles.map((f, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {f.filename}{" "}
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
+                    </span>
+                    <button
+                      onClick={() => handleRemoveDispatch(i)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      Verwijder
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
-        {/* Step 4 — Manual entries */}
-        <Card step="4" title="Manuele invoer (optioneel)">
-          <ManualEntryTable
-            sessionId={sessionId}
-            rows={manualRows}
-            onChange={setManualRows}
-          />
-        </Card>
-
-        {/* Step 5 — Date + Generate */}
-        <Card step="5" title="Datum en genereren" required>
-          <div className="flex items-end gap-4 flex-wrap">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Datum dispatchlijst
-              </label>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Step 3 — Paleislijst */}
+          <Card step="3" title="Paleislijst (optioneel)">
+            {paleisFile ? (
+              <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">{paleisFile}</p>
+                <button
+                  onClick={() => setPaleisFile(null)}
+                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 text-xs underline"
+                >
+                  Vervangen
+                </button>
+              </div>
+            ) : (
+              <DropZone
+                label="Upload paleislijst (.xlsx) — optioneel"
+                onFiles={handlePaleislijst}
+                uploading={loading}
+                disabled={loading || !celFile}
               />
+            )}
+          </Card>
+
+          {/* Step 4 — Manual entries */}
+          <Card step="4" title="Manuele invoer (optioneel)">
+            <ManualEntryTable
+              sessionId={sessionId}
+              rows={manualRows}
+              onChange={setManualRows}
+            />
+          </Card>
+
+          {/* Step 5 — Date + Generate */}
+          <Card step="5" title="Datum en genereren" required>
+            <div className="flex items-end gap-4 flex-wrap">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Datum dispatchlijst
+                </label>
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={loading || !celFile || dispatchFiles.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg px-6 py-2.5 text-sm transition"
+              >
+                {loading ? "Bezig met genereren..." : "Genereer dispatchlijst"}
+              </button>
             </div>
-            <button
-              onClick={handleGenerate}
-              disabled={loading || !celFile || dispatchFiles.length === 0}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg px-6 py-2.5 text-sm transition"
-            >
-              {loading ? "Bezig met genereren..." : "Genereer dispatchlijst"}
-            </button>
-          </div>
-          {(!celFile || dispatchFiles.length === 0) && (
-            <p className="text-xs text-gray-400 mt-2">
-              Upload eerst de celbezetting en minstens één dispatch-bestand.
-            </p>
-          )}
-        </Card>
+            {(!celFile || dispatchFiles.length === 0) && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                Upload eerst de celbezetting en minstens één dispatch-bestand.
+              </p>
+            )}
+          </Card>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -297,12 +346,12 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center gap-3 mb-4">
         <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
           {step}
         </span>
-        <h2 className="font-semibold text-gray-800">
+        <h2 className="font-semibold text-gray-800 dark:text-white">
           {title}
           {required && <span className="ml-1 text-red-500 text-xs">*</span>}
         </h2>
