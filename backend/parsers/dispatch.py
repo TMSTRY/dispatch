@@ -1,8 +1,7 @@
 from __future__ import annotations
-from io import BytesIO
 from datetime import datetime, time
-from openpyxl import load_workbook
 from .normalizer import normalize_cell
+from .workbook_reader import open_workbook
 
 
 def _to_time(val) -> time | None:
@@ -112,7 +111,7 @@ def _detect_keuken_cols(col_map: dict) -> tuple[int | None, int | None]:
 
 
 def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dict]:
-    wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
+    wb = open_workbook(file_bytes, source_name)
 
     fallback_uur, fallback_best = _detect_fallbacks(source_name)
 

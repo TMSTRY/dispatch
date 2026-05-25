@@ -128,7 +128,7 @@ async def upload_celbezetting(session_id: str, file: UploadFile = File(...)):
     session = _get_session(session_id)
     raw = await file.read()
     try:
-        result = parse_celbezetting(raw)
+        result = parse_celbezetting(raw, filename=file.filename or "")
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Fout bij verwerking celbezetting: {e}")
     session["celbezetting"] = result
@@ -164,7 +164,7 @@ async def upload_paleislijst(session_id: str, file: UploadFile = File(...)):
     session = _get_session(session_id)
     raw = await file.read()
     try:
-        rows = parse_paleislijst(raw)
+        rows = parse_paleislijst(raw, filename=file.filename or "")
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Fout bij verwerking paleislijst: {e}")
     session["paleislijst"] = rows

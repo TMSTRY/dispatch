@@ -1,15 +1,14 @@
 from __future__ import annotations
-from io import BytesIO
-from openpyxl import load_workbook
 from .normalizer import normalize_name, normalize_cell, normalize_key
+from .workbook_reader import open_workbook
 
 
-def parse_celbezetting(file_bytes: bytes) -> dict:
+def parse_celbezetting(file_bytes: bytes, filename: str = "") -> dict:
     """
     Returns dict keyed on normalize_key(naam, voornaam) → DetaineeRecord dict.
     Also returns a list for autocomplete: [{"naam", "voornaam", "cel", "key"}]
     """
-    wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
+    wb = open_workbook(file_bytes, filename)
     ws = wb.active
 
     # Detect real header row (contains Naam, Voornaam, Cel)

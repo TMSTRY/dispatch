@@ -1,8 +1,7 @@
 from __future__ import annotations
-from io import BytesIO
 from datetime import datetime, time
-from openpyxl import load_workbook
 from .normalizer import normalize_cell
+from .workbook_reader import open_workbook
 
 
 _WEIGER_TERMS    = ("weigert", "weigering", "refus", "refuse", "wenst niet te verschijnen")
@@ -41,8 +40,8 @@ def _row_has_weiger(row) -> bool:
     return False
 
 
-def parse_paleislijst(file_bytes: bytes) -> list[dict]:
-    wb = load_workbook(filename=BytesIO(file_bytes), data_only=True)
+def parse_paleislijst(file_bytes: bytes, filename: str = "") -> list[dict]:
+    wb = open_workbook(file_bytes, filename)
     ws = wb.active
 
     # ── Find header row ───────────────────────────────────────────────────────

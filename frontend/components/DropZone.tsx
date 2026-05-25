@@ -12,7 +12,7 @@ interface Props {
 
 export default function DropZone({
   label,
-  accept = ".xlsx",
+  accept = ".xlsx,.xls",
   multiple = false,
   onFiles,
   disabled = false,
@@ -26,7 +26,7 @@ export default function DropZone({
     setDragging(false);
     if (disabled) return;
     const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.name.endsWith(".xlsx")
+      f.name.endsWith(".xlsx") || f.name.endsWith(".xls")
     );
     if (files.length) onFiles(files);
   }
@@ -62,7 +62,7 @@ export default function DropZone({
       />
       <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{label}</p>
       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        {uploading ? "Bezig met uploaden..." : "Sleep hier of klik om te kiezen (.xlsx)"}
+        {uploading ? "Bezig met uploaden..." : "Sleep hier of klik om te kiezen (.xlsx / .xls)"}
       </p>
     </div>
   );
