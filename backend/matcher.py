@@ -53,12 +53,15 @@ def match_and_correct(
         # Try exact match first
         record = lookup.get(search_key)
 
-        # Fallback: fuzzy match
+        # Fallback: fuzzy match.
+        # token_set_ratio handles the common case where the dispatch file has
+        # only the first given name while the celbezetting has all given names
+        # ("TORREKENS VERA" matches "TORREKENS VERA FRANCOISE GEORGINE" → 100%).
         if record is None and all_keys:
             result = process.extractOne(
                 search_key,
                 all_keys,
-                scorer=fuzz.token_sort_ratio,
+                scorer=fuzz.token_set_ratio,
                 score_cutoff=85,
             )
             if result:

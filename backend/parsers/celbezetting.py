@@ -61,4 +61,14 @@ def parse_celbezetting(file_bytes: bytes) -> dict:
         lookup[key] = record
         autocomplete.append(record)
 
+        # Also index by first voornaam only.
+        # Dispatch files often contain only the first given name while the
+        # celbezetting stores all given names (e.g. "VERA FRANCOISE GEORGINE").
+        # Adding a short key makes exact matching work without fuzzy fallback.
+        voor_parts = voor_str.split()
+        if len(voor_parts) > 1:
+            short_key = normalize_key(naam_str, voor_parts[0])
+            if short_key not in lookup:   # don't overwrite on collision
+                lookup[short_key] = record
+
     return {"lookup": lookup, "autocomplete": autocomplete}
