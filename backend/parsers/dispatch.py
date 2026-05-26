@@ -152,6 +152,23 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                     col_map["uur"] = 0
                 break
 
+        # Headerless fallback (format 4): no known header found, but rows have
+        # the fixed structure  uur | celnr | naam | voornaam | bestemming
+        # Detected by: col[0] is a time/datetime value AND col[1] is an int.
+        if header_row_idx is None:
+            for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
+                if (
+                    len(row) >= 3
+                    and isinstance(row[0], (time, datetime))
+                    and isinstance(row[1], int)
+                    and row[2] is not None
+                    and str(row[2]).strip()
+                ):
+                    # data starts at row i — treat the row before it as "header"
+                    header_row_idx = i - 1
+                    col_map = {"uur": 0, "celnr": 1, "naam": 2, "voornaam": 3, "bestemming": 4}
+                    break
+
         if header_row_idx is None:
             continue  # sheet has no recognizable dispatch data
 
