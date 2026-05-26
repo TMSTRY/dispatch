@@ -120,18 +120,24 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
 
-        # Find header row (must contain "naam" + "bestemming")
+        # Find header row.
+        # Accepted formats:
+        #   1. Regular dispatch: row contains "naam" AND "bestemming"
+        #   2. Agenda/hoorzitting: row contains "rad" AND a cell containing "naam"
         header_row_idx = None
         col_map = {}
+        is_agenda = False
         for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
             row_lower = [str(c).strip().lower() if c is not None else "" for c in row]
-            if "naam" in row_lower and "bestemming" in row_lower:
+            is_regular = "naam" in row_lower and "bestemming" in row_lower
+            is_agenda_hdr = "rad" in row_lower and any("naam" in v for v in row_lower)
+            if is_regular or is_agenda_hdr:
                 header_row_idx = i
+                is_agenda = is_agenda_hdr and not is_regular
                 for j, val in enumerate(row):
                     lv = str(val).strip().lower() if val is not None else ""
                     if lv:
                         col_map[lv] = j
-                # "uur" fallback only if no dedicated time column found yet
                 if "uur" not in col_map:
                     col_map["uur"] = 0
                 break
@@ -144,10 +150,18 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         is_keuken = idx_uur_wd is not None and idx_uur_we is not None
 
         idx_uur  = col_map.get("uur", 0)
-        idx_cel  = col_map.get("celnr", 1)
-        idx_naam = col_map.get("naam", 2)
+        # "celnr." (with dot) is used in agenda files
+        idx_cel  = next((col_map[k] for k in ("celnr", "celnr.") if k in col_map), 1)
+        # "naam gedet." is used in agenda files
+        idx_naam = next((col_map[k] for k in ("naam", "naam gedet.") if k in col_map), 2)
         idx_voor = col_map.get("voornaam", 3)
         idx_best = col_map.get("bestemming", 4)
+        # Agenda-specific: RAD column (date of hearing) and fixed overrides
+        idx_rad  = col_map.get("rad")
+        if is_agenda:
+            fallback_best = "Hoorzitting"
+            fallback_uur  = time(10, 0)
+            idx_best = None  # no bestemming column in agenda files — always use fallback
 
         # Columns to exclude from skip-status scan (avoid false matches on names)
         _name_cols = {idx_naam, idx_voor}
@@ -168,6 +182,17 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             if naam_val.lower() in {"naam", "name", "voornaam", "firstname"}:
                 continue
 
+            # Agenda-specific filters:
+            if is_agenda:
+                # Skip rows without a RAD date — these have no scheduled hearing
+                rad_val = row[idx_rad] if (idx_rad is not None and len(row) > idx_rad) else None
+                if rad_val is None:
+                    continue
+                # Skip BVM / IBVR rows — internal measures, not transported
+                row_text = " ".join(str(v).lower() for v in row if v is not None)
+                if "bvm" in row_text or "ibvr" in row_text:
+                    continue
+
             # Skip rows marked as "rust" or "atv" in any non-name column.
             # Keuken and magazijn files mark unavailable detainees this way.
             if any(
@@ -180,7 +205,7 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             cel_val  = normalize_cell(row[idx_cel]  if len(row) > idx_cel  else None)
             voor_raw = row[idx_voor] if len(row) > idx_voor else None
             voor_val = str(voor_raw).strip() if voor_raw else None
-            best_raw = row[idx_best] if len(row) > idx_best else None
+            best_raw = (row[idx_best] if (idx_best is not None and len(row) > idx_best) else None)
             best_val = str(best_raw).strip() if best_raw else ""
 
             if voor_val in ("", "\xa0"):
