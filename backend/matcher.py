@@ -100,13 +100,8 @@ def match_and_correct(
                 celnr=celnr_orig,
                 source=source,
             ))
-            # Still include the row with original cell
-            matched.append({
-                **row,
-                "naam": naam,
-                "voornaam": voornaam or "",
-                "corrected": False,
-            })
+            # Do NOT add to matched — detainee not in celbezetting means
+            # they are transferred or released and must not appear on the list.
             continue
 
         correct_cel = record["cel"]
