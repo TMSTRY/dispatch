@@ -124,16 +124,20 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         # Accepted formats:
         #   1. Regular dispatch: row contains "naam" AND "bestemming"
         #   2. Agenda/hoorzitting: row contains "rad" AND a cell containing "naam"
+        #   3. Bezoek: row contains "shift" AND "type bezoek" (AND "naam")
         header_row_idx = None
         col_map = {}
         is_agenda = False
+        is_bezoek = False
         for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
             row_lower = [str(c).strip().lower() if c is not None else "" for c in row]
             is_regular = "naam" in row_lower and "bestemming" in row_lower
             is_agenda_hdr = "rad" in row_lower and any("naam" in v for v in row_lower)
-            if is_regular or is_agenda_hdr:
+            is_bezoek_hdr = "shift" in row_lower and "type bezoek" in row_lower and "naam" in row_lower
+            if is_bezoek_hdr or is_regular or is_agenda_hdr:
                 header_row_idx = i
-                is_agenda = is_agenda_hdr and not is_regular
+                is_bezoek = is_bezoek_hdr and not is_regular
+                is_agenda = is_agenda_hdr and not is_regular and not is_bezoek
                 for j, val in enumerate(row):
                     lv = str(val).strip().lower() if val is not None else ""
                     if lv:
@@ -149,13 +153,20 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         idx_uur_wd, idx_uur_we = _detect_keuken_cols(col_map)
         is_keuken = idx_uur_wd is not None and idx_uur_we is not None
 
-        idx_uur  = col_map.get("uur", 0)
+        # Bezoek: "shift" → uur, "type bezoek" → bestemming
+        # "naam" / "voornaam" = gedetineerde (not "bezoeker naam" / "bezoeker voornaam")
+        if is_bezoek:
+            idx_uur  = col_map.get("shift", col_map.get("uur", 0))
+            idx_best = col_map.get("type bezoek", col_map.get("bestemming", 4))
+        else:
+            idx_uur  = col_map.get("uur", 0)
+            idx_best = col_map.get("bestemming", 4)
+
         # "celnr." (with dot) is used in agenda files
         idx_cel  = next((col_map[k] for k in ("celnr", "celnr.") if k in col_map), 1)
         # "naam gedet." is used in agenda files
         idx_naam = next((col_map[k] for k in ("naam", "naam gedet.") if k in col_map), 2)
         idx_voor = col_map.get("voornaam", 3)
-        idx_best = col_map.get("bestemming", 4)
         # Agenda-specific: RAD column (date of hearing) and fixed overrides
         idx_rad  = col_map.get("rad")
         if is_agenda:
@@ -165,6 +176,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
 
         # Columns to exclude from skip-status scan (avoid false matches on names)
         _name_cols = {idx_naam, idx_voor}
+
+        # Bezoek deduplication: one row per (naam, voornaam, shift)
+        _bezoek_seen: set[tuple] = set()
 
         for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             if _is_blank_row(row):
@@ -239,6 +253,13 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                     uur_val = fallback_uur
                 if not best_val and fallback_best:
                     best_val = fallback_best
+
+                # Bezoek deduplication: same detainee + same shift → keep only first
+                if is_bezoek:
+                    dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val)
+                    if dedup_key in _bezoek_seen:
+                        continue
+                    _bezoek_seen.add(dedup_key)
 
                 rows_out.append({
                     "uur":        uur_val,
