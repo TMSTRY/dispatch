@@ -149,6 +149,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         idx_voor = col_map.get("voornaam", 3)
         idx_best = col_map.get("bestemming", 4)
 
+        # Columns to exclude from skip-status scan (avoid false matches on names)
+        _name_cols = {idx_naam, idx_voor}
+
         for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             if _is_blank_row(row):
                 continue
@@ -163,6 +166,15 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             # column header label (e.g. a repeated "Naam" row at the bottom of
             # a sheet used as a manual-entry template).
             if naam_val.lower() in {"naam", "name", "voornaam", "firstname"}:
+                continue
+
+            # Skip rows marked as "rust" or "atv" in any non-name column.
+            # Keuken and magazijn files mark unavailable detainees this way.
+            if any(
+                str(row[i]).strip().lower() in {"rust", "atv"}
+                for i in range(len(row))
+                if i not in _name_cols and row[i] is not None
+            ):
                 continue
 
             cel_val  = normalize_cell(row[idx_cel]  if len(row) > idx_cel  else None)
