@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from datetime import datetime, time
 from .normalizer import normalize_cell
 from .workbook_reader import open_workbook
@@ -14,6 +15,11 @@ def _to_time(val) -> time | None:
     s = str(val).strip()
     if not s or s in ("\xa0", ""):
         return None
+    # Bezoek shift format: "10u00 - 12u00" or "Ma - Vr: 16u15 - 17u15"
+    # Extract the first HH[u]MM pattern and normalise "u" → ":"
+    m = re.search(r'\b(\d{1,2})[u:](\d{2})\b', s)
+    if m:
+        s = f"{m.group(1)}:{m.group(2)}"
     for fmt in ("%H:%M:%S", "%H:%M"):
         try:
             return datetime.strptime(s, fmt).time()
@@ -162,8 +168,8 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             idx_uur  = col_map.get("uur", 0)
             idx_best = col_map.get("bestemming", 4)
 
-        # "celnr." (with dot) is used in agenda files
-        idx_cel  = next((col_map[k] for k in ("celnr", "celnr.") if k in col_map), 1)
+        # "celnr." (with dot) is used in agenda files; "cel" is used in bezoek files
+        idx_cel  = next((col_map[k] for k in ("celnr", "celnr.", "cel") if k in col_map), 1)
         # "naam gedet." is used in agenda files
         idx_naam = next((col_map[k] for k in ("naam", "naam gedet.") if k in col_map), 2)
         idx_voor = col_map.get("voornaam", 3)
