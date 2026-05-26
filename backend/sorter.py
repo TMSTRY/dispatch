@@ -53,13 +53,17 @@ def build_tabs(rows: list[dict]) -> dict[str, list[dict]]:
             tabs[f"sectie {section}"].append(row)
 
         # Route to lijst disp or verzorging.
-        # Women (celnr 0-57) go to lijst disp even when bestemming is verzorging —
-        # they appear on sectie 10 and the general list, but not the Verzorging tab.
+        # Verzorging rows NEVER go to lijst disp.
+        # - Men (celnr 58+): Verzorging tab
+        # - Women (celnr 0-57): sectie 10 only (already added above), nothing else
+        # - All other rows: lijst disp
         is_vrouw = celnr is not None and 0 <= celnr <= 57
-        if is_verzorging(row) and not is_vrouw:
-            # BD cells always get celnr 62 on the Verzorging tab
-            verzorg_row = {**row, "celnr": 62} if celnr in _BD_RANGE else row
-            tabs["verzorging"].append(verzorg_row)
+        if is_verzorging(row):
+            if not is_vrouw:
+                # BD cells always get celnr 62 on the Verzorging tab
+                verzorg_row = {**row, "celnr": 62} if celnr in _BD_RANGE else row
+                tabs["verzorging"].append(verzorg_row)
+            # Women with verzorging: sectie 10 only — do not add anywhere else
         else:
             tabs["lijst disp"].append(row)
 
