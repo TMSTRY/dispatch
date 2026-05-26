@@ -254,7 +254,7 @@ export default function Home() {
           </Card>
 
           {/* Step 2 — Dispatch files */}
-          <Card step="2" title="Dispatch-bestanden" required>
+          <Card step="2" title="Dispatch-bestanden" required badge={dispatchFiles.length}>
             <DropZone
               label="Upload dispatch-bestanden (.xlsx)"
               multiple
@@ -355,11 +355,13 @@ function Card({
   step,
   title,
   required = false,
+  badge,
   children,
 }: {
   step: string;
   title: string;
   required?: boolean;
+  badge?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -368,9 +370,14 @@ function Card({
         <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
           {step}
         </span>
-        <h2 className="font-semibold text-gray-800 dark:text-white">
+        <h2 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
           {title}
-          {required && <span className="ml-1 text-red-500 text-xs">*</span>}
+          {required && <span className="text-red-500 text-xs">*</span>}
+          {badge !== undefined && badge > 0 && (
+            <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full">
+              {badge}
+            </span>
+          )}
         </h2>
       </div>
       {children}
