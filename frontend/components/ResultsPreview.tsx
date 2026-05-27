@@ -5,10 +5,11 @@ import { downloadUrl } from "@/lib/api";
 
 interface Props {
   result: GenerateResult;
+  onBack: () => void;
   onReset: () => void;
 }
 
-export default function ResultsPreview({ result, onReset }: Props) {
+export default function ResultsPreview({ result, onBack, onReset }: Props) {
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
@@ -50,13 +51,21 @@ export default function ResultsPreview({ result, onReset }: Props) {
           Dispatchlijst gegenereerd
         </p>
         <p className="text-green-600 dark:text-green-400 text-sm mb-4">{result.filename}</p>
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="inline-block bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold rounded-lg px-6 py-3 text-sm transition cursor-pointer"
-        >
-          {downloading ? "Bezig met downloaden..." : "Download XLSX"}
-        </button>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg px-5 py-3 text-sm transition"
+          >
+            ← Terug
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="inline-block bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold rounded-lg px-6 py-3 text-sm transition cursor-pointer"
+          >
+            {downloading ? "Bezig met downloaden..." : "Download XLSX"}
+          </button>
+        </div>
       </div>
 
       {/* Corrections */}

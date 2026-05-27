@@ -181,7 +181,7 @@ export default function Home() {
         {/* Cards pulled up so they overlap the bottom of the hero */}
         <div className="relative -mt-28 px-4 pb-6">
           <div className="max-w-4xl mx-auto">
-            <ResultsPreview result={result} onReset={reset} />
+            <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
           </div>
         </div>
         <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
