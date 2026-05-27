@@ -148,6 +148,8 @@ def _write_data_row(ws, row_num: int, row: dict | None):
     celnr = row.get("celnr")
     naam = row.get("naam", "")
     voornaam = row.get("voornaam") or ""
+    # Only the first given name on the dispatch list
+    voornaam = voornaam.split()[0] if voornaam.strip() else ""
     bestemming = row.get("bestemming", "")
 
     cells[0].value = uur if isinstance(uur, time) else None
