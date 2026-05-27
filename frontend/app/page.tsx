@@ -63,7 +63,7 @@ export default function Home() {
     }
   }
 
-  async function handleDispatch(files: File[]) {
+  async function handleDispatch(files: File[], category: "dispatch" | "agenda" | "bezoek" = "dispatch") {
     if (!sessionId) return;
     setLoading(true);
     setError(null);
@@ -72,7 +72,7 @@ export default function Home() {
         const data = await uploadDispatch(sessionId, file);
         setDispatchFiles((prev) => [
           ...prev,
-          { filename: file.name, rows: data.rows, index: prev.length },
+          { filename: file.name, rows: data.rows, index: prev.length, category },
         ]);
       }
     } catch (e: any) {
@@ -254,19 +254,19 @@ export default function Home() {
           </Card>
 
           {/* Step 2 — Dispatch files */}
-          <Card step="2" title="Dispatch-bestanden" required badge={dispatchFiles.length}>
+          <Card step="2" title="Dispatch-bestanden" required badge={dispatchFiles.filter(f => f.category === "dispatch").length}>
             <DropZone
               label="Upload dispatch-bestanden (.xlsx)"
               multiple
-              onFiles={handleDispatch}
+              onFiles={(files) => handleDispatch(files, "dispatch")}
               uploading={loading}
               disabled={loading || !celFile}
             />
-            {dispatchFiles.length > 0 && (
+            {dispatchFiles.filter(f => f.category === "dispatch").length > 0 && (
               <ul className="mt-3 space-y-1">
-                {dispatchFiles.map((f, i) => (
+                {dispatchFiles.filter(f => f.category === "dispatch").map((f) => (
                   <li
-                    key={i}
+                    key={f.index}
                     className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
                   >
                     <span className="text-gray-700 dark:text-gray-300">
@@ -274,7 +274,7 @@ export default function Home() {
                       <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
                     </span>
                     <button
-                      onClick={() => handleRemoveDispatch(i)}
+                      onClick={() => handleRemoveDispatch(f.index)}
                       className="text-red-400 hover:text-red-600 text-xs"
                     >
                       Verwijder
@@ -285,8 +285,72 @@ export default function Home() {
             )}
           </Card>
 
-          {/* Step 3 — Paleislijst */}
-          <Card step="3" title="Paleislijst (optioneel)">
+          {/* Step 3 — Agenda / Hoorzitting */}
+          <Card step="3" title="Agenda / Hoorzitting (optioneel)" badge={dispatchFiles.filter(f => f.category === "agenda").length}>
+            <DropZone
+              label="Upload agenda- of hoorzittingsbestand (.xlsx)"
+              multiple
+              onFiles={(files) => handleDispatch(files, "agenda")}
+              uploading={loading}
+              disabled={loading || !celFile}
+            />
+            {dispatchFiles.filter(f => f.category === "agenda").length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {dispatchFiles.filter(f => f.category === "agenda").map((f) => (
+                  <li
+                    key={f.index}
+                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {f.filename}{" "}
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
+                    </span>
+                    <button
+                      onClick={() => handleRemoveDispatch(f.index)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      Verwijder
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {/* Step 4 — Gereserveerde bezoeken */}
+          <Card step="4" title="Gereserveerde bezoeken (optioneel)" badge={dispatchFiles.filter(f => f.category === "bezoek").length}>
+            <DropZone
+              label="Upload bezoekbestand (.xlsx)"
+              multiple
+              onFiles={(files) => handleDispatch(files, "bezoek")}
+              uploading={loading}
+              disabled={loading || !celFile}
+            />
+            {dispatchFiles.filter(f => f.category === "bezoek").length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {dispatchFiles.filter(f => f.category === "bezoek").map((f) => (
+                  <li
+                    key={f.index}
+                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {f.filename}{" "}
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
+                    </span>
+                    <button
+                      onClick={() => handleRemoveDispatch(f.index)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      Verwijder
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {/* Step 5 — Paleislijst */}
+          <Card step="5" title="Paleislijst (optioneel)">
             {paleisFile ? (
               <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
                 <p className="text-sm font-medium text-green-800 dark:text-green-300">{paleisFile}</p>
@@ -307,8 +371,8 @@ export default function Home() {
             )}
           </Card>
 
-          {/* Step 4 — Manual entries */}
-          <Card step="4" title="Manuele invoer (optioneel)">
+          {/* Step 6 — Manual entries */}
+          <Card step="6" title="Manuele invoer (optioneel)">
             <ManualEntryTable
               sessionId={sessionId}
               rows={manualRows}
@@ -316,8 +380,8 @@ export default function Home() {
             />
           </Card>
 
-          {/* Step 5 — Date + Generate */}
-          <Card step="5" title="Datum en genereren" required>
+          {/* Step 7 — Date + Generate */}
+          <Card step="7" title="Datum en genereren" required>
             <div className="flex items-end gap-4 flex-wrap">
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">

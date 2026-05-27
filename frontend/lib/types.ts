@@ -41,6 +41,7 @@ export interface DispatchFile {
   filename: string;
   rows: number;
   index: number;
+  category: "dispatch" | "agenda" | "bezoek";
 }
 
 export type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
