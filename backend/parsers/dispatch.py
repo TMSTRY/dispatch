@@ -200,8 +200,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         # Columns to exclude from skip-status scan (avoid false matches on names)
         _name_cols = {idx_naam, idx_voor}
 
-        # Bezoek deduplication: one row per (naam, voornaam, shift)
-        _bezoek_seen: set[tuple] = set()
+        # Deduplication: one row per (naam, voornaam, uur) per sheet.
+        # Catches doubles in any file type (bezoek visitors, TEC duplicates, …)
+        _seen: set[tuple] = set()
 
         for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             if _is_blank_row(row):
@@ -277,12 +278,11 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 if not best_val and fallback_best:
                     best_val = fallback_best
 
-                # Bezoek deduplication: same detainee + same shift → keep only first
-                if is_bezoek:
-                    dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val)
-                    if dedup_key in _bezoek_seen:
-                        continue
-                    _bezoek_seen.add(dedup_key)
+                # Deduplication: same naam + voornaam + uur → keep only first
+                dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val)
+                if dedup_key in _seen:
+                    continue
+                _seen.add(dedup_key)
 
                 rows_out.append({
                     "uur":        uur_val,
