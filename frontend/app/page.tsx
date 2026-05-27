@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthGate from "@/components/AuthGate";
 import { VERSION } from "@/lib/version";
+import { fireConfetti } from "@/lib/confetti";
 import DropZone from "@/components/DropZone";
 import ManualEntryTable from "@/components/ManualEntryTable";
 import ResultsPreview from "@/components/ResultsPreview";
@@ -14,6 +15,16 @@ import {
   generate,
 } from "@/lib/api";
 import { ManualRow, DispatchFile, GenerateResult } from "@/lib/types";
+
+const LOADING_MESSAGES = [
+  "Cellen worden gecheckt…",
+  "Gedetineerden worden gesorteerd…",
+  "Celnummers worden gecorrigeerd…",
+  "Bestemmingen worden opgezocht…",
+  "Secties worden ingedeeld…",
+  "Lijsten worden opgesteld…",
+  "Bijna klaar…",
+];
 
 export default function Home() {
   const [authed, setAuthed] = useState(false);
@@ -31,8 +42,10 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Check existing auth
   useEffect(() => {
@@ -112,7 +125,16 @@ export default function Home() {
   async function handleGenerate() {
     if (!sessionId) return;
     setLoading(true);
+    setLoadingMsg(LOADING_MESSAGES[0]);
     setError(null);
+
+    // Rotate loading messages every 1.8 s
+    let msgIdx = 0;
+    loadingTimerRef.current = setInterval(() => {
+      msgIdx = Math.min(msgIdx + 1, LOADING_MESSAGES.length - 1);
+      setLoadingMsg(LOADING_MESSAGES[msgIdx]);
+    }, 1800);
+
     try {
       const entries = manualRows
         .filter((r) => r.naam.trim())
@@ -125,9 +147,11 @@ export default function Home() {
         }));
       const data = await generate(sessionId, entries, targetDate);
       setResult(data);
+      fireConfetti();
     } catch (e: any) {
       setError(e.message);
     } finally {
+      if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
       setLoading(false);
     }
   }
@@ -399,7 +423,7 @@ export default function Home() {
                 disabled={loading || !celFile || dispatchFiles.length === 0}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg px-6 py-2.5 text-sm transition"
               >
-                {loading ? "Bezig met genereren..." : "Genereer dispatchlijst"}
+                {loading ? loadingMsg : "Genereer dispatchlijst"}
               </button>
             </div>
             {(!celFile || dispatchFiles.length === 0) && (
