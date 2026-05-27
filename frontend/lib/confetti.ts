@@ -40,10 +40,10 @@ export function fireConfetti() {
   const cx = canvas.width / 2;
 
   const particles: Particle[] = Array.from({ length: COUNT }, () => ({
-    x: cx + randomBetween(-120, 120),
-    y: canvas.height + 10,
-    vx: randomBetween(-6, 6),
-    vy: randomBetween(-18, -10),
+    x: randomBetween(0, canvas.width),
+    y: randomBetween(-80, -5),
+    vx: randomBetween(-2.5, 2.5),
+    vy: randomBetween(3, 7),
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     width: randomBetween(8, 14),
     height: randomBetween(5, 9),
@@ -53,9 +53,9 @@ export function fireConfetti() {
   }));
 
   let frame: number;
-  const GRAVITY = 0.45;
+  const GRAVITY = 0.2;
   const startTime = performance.now();
-  const DURATION = 3000; // ms
+  const DURATION = 4500; // ms
 
   function draw(now: number) {
     const elapsed = now - startTime;
