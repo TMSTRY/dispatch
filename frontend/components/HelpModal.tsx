@@ -87,7 +87,7 @@ export default function HelpModal({ onClose }: Props) {
               },
               {
                 n: "6", label: "Manuele invoer", required: false,
-                text: "Voeg handmatig gedetineerden toe die niet in een bestand staan. Begin te typen in het naamveld voor autocomplete op basis van de celbezetting.",
+                text: "Voeg handmatig gedetineerden toe die niet in een bestand staan, zoals UV's, PV's, vrij of transfer. Begin te typen in het naamveld voor autocomplete op basis van de celbezetting.",
               },
               {
                 n: "7", label: "Datum en genereren", required: true,
@@ -115,11 +115,11 @@ export default function HelpModal({ onClose }: Props) {
           {/* Results */}
           <div className="space-y-2">
             <h3 className="font-semibold text-gray-800 dark:text-white">Na het genereren</h3>
-            <ul className="space-y-1.5 text-gray-500 dark:text-gray-400">
-              <li className="flex gap-2"><span className="text-green-500">✓</span> Download de Excel met alle tabbladen (lijst disp, verzorging, secties 1–10).</li>
-              <li className="flex gap-2"><span className="text-blue-500">✓</span> Bekijk de <span className="font-medium text-gray-700 dark:text-gray-300">celnummer-correcties</span> — foute celnummers uit de bronbestanden automatisch rechtgezet.</li>
-              <li className="flex gap-2"><span className="text-orange-500">✓</span> Bekijk de <span className="font-medium text-gray-700 dark:text-gray-300">niet gevonden</span> lijst — gedetineerden die niet in de celbezetting staan (vrijgelaten, verlof, …).</li>
-              <li className="flex gap-2"><span className="text-gray-400">✓</span> Gebruik <span className="font-medium text-gray-700 dark:text-gray-300">← Terug</span> om een bestand te wisselen zonder alles opnieuw te uploaden.</li>
+            <ul className="space-y-2 text-gray-500 dark:text-gray-400">
+              <li className="flex gap-2.5 items-start"><span className="text-green-500 mt-0.5">✓</span><span>Download de Excel met alle tabbladen (lijst disp, verzorging, secties 1–10).</span></li>
+              <li className="flex gap-2.5 items-start"><span className="text-blue-500 mt-0.5">✓</span><span>Controleer de celnummer-correcties — foute celnummers uit de bronbestanden worden automatisch rechtgezet.</span></li>
+              <li className="flex gap-2.5 items-start"><span className="text-orange-500 mt-0.5">✓</span><span>Bekijk de lijst van niet gevonden gedetineerden — zij staan niet in de celbezetting en zijn vermoedelijk vrijgelaten of op verlof.</span></li>
+              <li className="flex gap-2.5 items-start"><span className="text-gray-400 mt-0.5">✓</span><span>Gebruik de knop "← Terug" om één bestand te wisselen zonder alles opnieuw te uploaden.</span></li>
             </ul>
           </div>
 
