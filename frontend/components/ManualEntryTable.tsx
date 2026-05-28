@@ -167,7 +167,7 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
           ))}
         </tbody>
       </table>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="mt-3 flex flex-col gap-2">
         <button
           onClick={() => onChange([...rows, newRow()])}
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
