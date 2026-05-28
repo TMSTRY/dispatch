@@ -170,6 +170,14 @@ def _write_sheet(ws, title: str, disp_date: str, rows: list, is_lijst_disp=False
     for i, row in enumerate(display_rows, start=3):
         _write_data_row(ws, i, row)
 
+    # Print settings: fit all columns on one page width, portrait A4
+    ws.page_setup.orientation = "portrait"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0  # unlimited rows — don't squish vertically
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+
 
 def generate_workbook(tabs: dict[str, list[dict]], target_date: date) -> Workbook:
     wb = Workbook()
