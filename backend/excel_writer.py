@@ -14,7 +14,7 @@ _FONT_HEADER_SMALL = Font(name="Arial", size=8, bold=True)
 _FONT_DATA = Font(name="Calibri", size=10)
 
 _ALIGN_CENTER = Alignment(horizontal="center", vertical="center")
-_ALIGN_HEADER_SMALL = Alignment(horizontal="center")
+_ALIGN_HEADER_SMALL = Alignment(horizontal="center", vertical="bottom", text_rotation=90)
 
 _SIDE_MED = Side(border_style="medium")
 _SIDE_THIN = Side(border_style="thin")
