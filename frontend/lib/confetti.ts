@@ -41,21 +41,21 @@ export function fireConfetti() {
 
   const particles: Particle[] = Array.from({ length: COUNT }, () => ({
     x: randomBetween(0, canvas.width),
-    y: randomBetween(-80, -5),
-    vx: randomBetween(-2.5, 2.5),
-    vy: randomBetween(3, 7),
+    y: randomBetween(-120, -5),
+    vx: randomBetween(-1.5, 1.5),
+    vy: randomBetween(1.5, 3.5),
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     width: randomBetween(8, 14),
     height: randomBetween(5, 9),
     tilt: randomBetween(-10, 10),
-    tiltSpeed: randomBetween(-0.3, 0.3),
+    tiltSpeed: randomBetween(-0.25, 0.25),
     opacity: 1,
   }));
 
   let frame: number;
-  const GRAVITY = 0.2;
+  const GRAVITY = 0.06;
   const startTime = performance.now();
-  const DURATION = 4500; // ms
+  const DURATION = 7000; // ms
 
   function draw(now: number) {
     const elapsed = now - startTime;
