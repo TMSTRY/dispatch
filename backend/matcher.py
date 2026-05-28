@@ -5,6 +5,12 @@ from parsers.normalizer import normalize_key, normalize_cell, normalize_name
 from models import CorrectionEntry, UnmatchedEntry
 
 
+def _first_voor_norm(voornaam: str) -> str:
+    """Normalize only the first given name — avoids dilution when the
+    celbezetting stores multiple given names (e.g. 'Wali Mohammad')."""
+    return normalize_name(voornaam.split()[0]) if voornaam and voornaam.strip() else ""
+
+
 def _parse_manual_time(s: str | None) -> time | None:
     if not s:
         return None
@@ -84,12 +90,12 @@ def match_and_correct(
                     candidates,
                     key=lambda c: fuzz.ratio(
                         normalize_name(potential_voor),
-                        normalize_name(c["voornaam"]),
+                        _first_voor_norm(c["voornaam"]),
                     ),
                 )
                 if fuzz.ratio(
                     normalize_name(potential_voor),
-                    normalize_name(best["voornaam"]),
+                    _first_voor_norm(best["voornaam"]),
                 ) >= 40:
                     record = best
 
@@ -112,7 +118,7 @@ def match_and_correct(
                     # Single person with that surname — accept if voornaam also resembles
                     if fuzz.ratio(
                         normalize_name(potential_voor),
-                        normalize_name(candidates[0]["voornaam"]),
+                        _first_voor_norm(candidates[0]["voornaam"]),
                     ) >= 40:
                         record = candidates[0]
                 elif candidates:
@@ -120,12 +126,12 @@ def match_and_correct(
                         candidates,
                         key=lambda c: fuzz.ratio(
                             normalize_name(potential_voor),
-                            normalize_name(c["voornaam"]),
+                            _first_voor_norm(c["voornaam"]),
                         ),
                     )
                     if fuzz.ratio(
                         normalize_name(potential_voor),
-                        normalize_name(best["voornaam"]),
+                        _first_voor_norm(best["voornaam"]),
                     ) >= 40:
                         record = best
 
