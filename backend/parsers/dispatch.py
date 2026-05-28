@@ -294,6 +294,10 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 if not best_val and fallback_best:
                     best_val = fallback_best
 
+                # Bezoek-specific time correction: 13:15 → 13:00
+                if is_bezoek and uur_val == time(13, 15):
+                    uur_val = time(13, 0)
+
                 # Deduplication: same naam + voornaam + uur → keep only first
                 dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val)
                 if dedup_key in _seen:
