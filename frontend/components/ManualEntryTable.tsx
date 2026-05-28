@@ -17,6 +17,7 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
   const [suggestions, setSuggestions] = useState<AutocompleteResult[]>([]);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const [celWarnings, setCelWarnings] = useState<Record<string, string>>({});
+  const [bulkCount, setBulkCount] = useState(5);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function update(id: string, field: keyof ManualRow, value: string) {
@@ -166,12 +167,36 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
           ))}
         </tbody>
       </table>
-      <button
-        onClick={() => onChange([...rows, newRow()])}
-        className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-      >
-        + Rij toevoegen
-      </button>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => onChange([...rows, newRow()])}
+          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+        >
+          + Rij toevoegen
+        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => onChange([...rows, ...Array.from({ length: bulkCount }, newRow)])}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+          >
+            +
+          </button>
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={bulkCount}
+            onChange={(e) => setBulkCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+            className="w-14 px-2 py-0.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+          <button
+            onClick={() => onChange([...rows, ...Array.from({ length: bulkCount }, newRow)])}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+          >
+            rijen toevoegen
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
