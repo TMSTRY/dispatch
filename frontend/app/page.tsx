@@ -15,6 +15,7 @@ import {
   generate,
 } from "@/lib/api";
 import { ManualRow, DispatchFile, GenerateResult } from "@/lib/types";
+import HelpModal from "@/components/HelpModal";
 
 const LOADING_MESSAGES = [
   "Cellen worden gecheckt…",
@@ -45,6 +46,7 @@ export default function Home() {
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Check existing auth
@@ -208,7 +210,16 @@ export default function Home() {
             <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
           </div>
         </div>
-        <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
+        <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">
+        v{VERSION}{" · "}
+        <button
+          onClick={() => setShowHelp(true)}
+          className="underline hover:text-gray-500 dark:hover:text-gray-400 transition"
+        >
+          hoe het werkt
+        </button>
+      </p>
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       </div>
     );
   }
@@ -434,7 +445,16 @@ export default function Home() {
           </Card>
         </div>
       </div>
-      <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">v{VERSION}</p>
+      <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">
+        v{VERSION}{" · "}
+        <button
+          onClick={() => setShowHelp(true)}
+          className="underline hover:text-gray-500 dark:hover:text-gray-400 transition"
+        >
+          hoe het werkt
+        </button>
+      </p>
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
