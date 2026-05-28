@@ -93,6 +93,42 @@ def match_and_correct(
                 ) >= 40:
                     record = best
 
+        # 4th fallback: fuzzy surname lookup — catches the rare case where BOTH
+        # naam AND voornaam contain a typo (e.g. "Mohamed Wail" → "Mohammad Wali").
+        # Requires fuzzy surname match ≥ 78% AND voornaam similarity ≥ 40%
+        # so the double threshold keeps false positives in check.
+        if record is None:
+            naam_only = celbezetting.get("naam_only_lookup", {})
+            naam_norm = normalize_name(potential_naam)
+            surname_match = process.extractOne(
+                naam_norm,
+                list(naam_only.keys()),
+                scorer=fuzz.ratio,
+                score_cutoff=78,
+            )
+            if surname_match:
+                candidates = naam_only[surname_match[0]]
+                if len(candidates) == 1:
+                    # Single person with that surname — accept if voornaam also resembles
+                    if fuzz.ratio(
+                        normalize_name(potential_voor),
+                        normalize_name(candidates[0]["voornaam"]),
+                    ) >= 40:
+                        record = candidates[0]
+                elif candidates:
+                    best = max(
+                        candidates,
+                        key=lambda c: fuzz.ratio(
+                            normalize_name(potential_voor),
+                            normalize_name(c["voornaam"]),
+                        ),
+                    )
+                    if fuzz.ratio(
+                        normalize_name(potential_voor),
+                        normalize_name(best["voornaam"]),
+                    ) >= 40:
+                        record = best
+
         if record is None:
             unmatched.append(UnmatchedEntry(
                 naam=naam,
