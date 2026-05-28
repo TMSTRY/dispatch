@@ -7,6 +7,28 @@ _VERZORGING_KEYWORDS = ("verzorging", "van damme", "tiberghien")
 # BD (Beperkte Detentie): cells 58–70 are always mapped to cell 62 in Verzorging.
 _BD_RANGE = range(58, 71)
 
+# ── Veiligheids-/strafcellen (430–434) ───────────────────────────────────────
+# Detainees in these cells only appear on the dispatch list for essential
+# destinations. All recreational/activity-based movements are suppressed.
+_SECURITY_CELL_RANGE = range(430, 435)  # 430, 431, 432, 433, 434
+
+_SECURITY_ALLOWED_KEYWORDS = (
+    "hoorzitting",
+    "griffie",
+    "betekening",
+    "verzorging",
+    "van damme",
+    "tiberghien",
+    "paleis",
+    "uithaling",
+)
+
+
+def _is_allowed_for_security_cell(row: dict) -> bool:
+    """Return True if the destination is essential enough for a security cell detainee."""
+    dest = str(row.get("bestemming", "")).lower()
+    return any(kw in dest for kw in _SECURITY_ALLOWED_KEYWORDS)
+
 
 def _sort_key_time(row: dict):
     t = row.get("uur")
@@ -46,6 +68,11 @@ def build_tabs(rows: list[dict]) -> dict[str, list[dict]]:
 
     for row in rows:
         celnr = row.get("celnr")
+
+        # Security/punishment cell filter: 430–434 only allowed for essential destinations
+        if celnr in _SECURITY_CELL_RANGE and not _is_allowed_for_security_cell(row):
+            continue
+
         section = get_section(celnr)
 
         # Route to section tab
