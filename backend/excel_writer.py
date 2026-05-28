@@ -120,11 +120,12 @@ def _write_header(ws, title: str, disp_date: str, is_lijst_disp: bool = False):
         ("G2", "doorgestuurd", _FONT_HEADER_SMALL, _BORDER_HDR_MID, "General"),
         ("H2", "terug", _FONT_HEADER_SMALL, _BORDER_HDR_LAST, "General"),
     ]
+    _align_rotated = Alignment(horizontal="center", vertical="bottom", text_rotation=90)
     for coord, val, font, border, nfmt in headers:
         cell = ws[coord]
         cell.value = val
         cell.font = font
-        cell.alignment = _ALIGN_CENTER if font == _FONT_HEADER_MAIN else _ALIGN_HEADER_SMALL
+        cell.alignment = _ALIGN_CENTER if font == _FONT_HEADER_MAIN else _align_rotated
         cell.border = border
         cell.number_format = nfmt
 
