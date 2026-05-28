@@ -76,12 +76,14 @@ def _try_split_full_name(naam: str, voornaam: str | None) -> tuple[str, str | No
     return naam, voornaam             # pattern unclear → leave unchanged
 
 
-# ── Filename-based fallback detection ────────────────────────────────────────
-# Some services omit uur/bestemming; we infer them from the filename.
-_FALLBACK_RULES: list[tuple[list[str], time, str]] = [
-    # keywords (all must appear in lowercased filename)  →  uur, bestemming
+# ── Filename/title-based fallback detection ──────────────────────────────────
+# Some services omit uur/bestemming; we infer them from filename or title row.
+# uur=None means: only fill bestemming if empty, leave uur unchanged.
+_FALLBACK_RULES: list[tuple[list[str], time | None, str]] = [
+    # keywords (all must appear in lowercased text)  →  uur, bestemming
     (["betekening"],  time(9, 0),  "Betekening directeur"),
     (["griffie"],     time(8, 30), "Griffie"),
+    (["eredienst"],   None,        "Kapel"),   # Katholieke eredienst, etc.
 ]
 
 
