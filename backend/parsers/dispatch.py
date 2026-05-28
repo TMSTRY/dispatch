@@ -172,6 +172,20 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         if header_row_idx is None:
             continue  # sheet has no recognizable dispatch data
 
+        # Title-based fallback: if filename didn't match, scan rows before the
+        # header for fallback keywords (e.g. "DISPATCHER BETEKENINGEN DIRECTEUR").
+        if fallback_uur is None and not fallback_best and header_row_idx > 1:
+            title_text = " ".join(
+                str(c).lower()
+                for row in ws.iter_rows(min_row=1, max_row=header_row_idx - 1, values_only=True)
+                for c in row if c is not None
+            )
+            for keywords, f_uur, f_best in _FALLBACK_RULES:
+                if all(kw in title_text for kw in keywords):
+                    fallback_uur = f_uur
+                    fallback_best = f_best
+                    break
+
         # Check for keuken dual-time layout
         idx_uur_wd, idx_uur_we = _detect_keuken_cols(col_map)
         is_keuken = idx_uur_wd is not None and idx_uur_we is not None
