@@ -139,7 +139,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         is_bezoek = False
         for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
             row_lower = [str(c).strip().lower() if c is not None else "" for c in row]
-            is_regular = "naam" in row_lower and "bestemming" in row_lower
+            is_regular = "naam" in row_lower and (
+                "bestemming" in row_lower or "plaats" in row_lower
+            )
             is_agenda_hdr = "rad" in row_lower and any("naam" in v for v in row_lower)
             is_bezoek_hdr = "shift" in row_lower and "type bezoek" in row_lower and "naam" in row_lower
             if is_bezoek_hdr or is_regular or is_agenda_hdr:
@@ -152,6 +154,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                         col_map[lv] = j
                 if "uur" not in col_map:
                     col_map["uur"] = 0
+                # "plaats" is an alias for "bestemming" (used in zorg files)
+                if "plaats" in col_map and "bestemming" not in col_map:
+                    col_map["bestemming"] = col_map["plaats"]
                 break
 
         # Headerless fallback (format 4): no known header found, but rows have
