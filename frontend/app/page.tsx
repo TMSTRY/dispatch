@@ -196,16 +196,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone */}
+          {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone.
+               Starts at 30% down the image, fully opaque well before the image clips,
+               so there is no hard edge — just a smooth fade into the page background. */}
           {/* Light mode */}
           <div
             className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
-            style={{ top: "calc(82vh * 0.48)", height: "calc(82vh * 0.52 + 11rem)", background: "linear-gradient(to top, white 0%, white 4%, transparent 72%)" }}
+            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, white 0%, white 38%, transparent 85%)" }}
           />
           {/* Dark mode */}
           <div
             className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
-            style={{ top: "calc(82vh * 0.48)", height: "calc(82vh * 0.52 + 11rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 4%, transparent 72%)" }}
+            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 38%, transparent 85%)" }}
           />
 
           {/* Cards pulled up into the hero */}
@@ -250,16 +252,18 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone */}
+        {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone.
+             Starts at 30% down the image, fully opaque well before the image clips,
+             so there is no hard edge — just a smooth fade into the page background. */}
         {/* Light mode */}
         <div
           className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
-          style={{ top: "calc(68vh * 0.48)", height: "calc(68vh * 0.52 + 9rem)", background: "linear-gradient(to top, white 0%, white 4%, transparent 72%)" }}
+          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, white 0%, white 38%, transparent 85%)" }}
         />
         {/* Dark mode */}
         <div
           className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
-          style={{ top: "calc(68vh * 0.48)", height: "calc(68vh * 0.52 + 9rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 4%, transparent 72%)" }}
+          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 38%, transparent 85%)" }}
         />
 
         {/* Cards pulled up into the hero */}
