@@ -298,8 +298,12 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 if is_bezoek and uur_val == time(13, 15):
                     uur_val = time(13, 0)
 
-                # Deduplication: same naam + voornaam + uur → keep only first
-                dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val)
+                # Deduplication: same naam + voornaam + uur + bestemming → keep only first.
+                # Including bestemming ensures someone booked for two different
+                # activities at the same hour (e.g. Gitaar Les + Nederlands at 13:00)
+                # is kept twice, while true duplicates (same activity, same hour) are
+                # still filtered.
+                dedup_key = (naam_val.lower(), (voor_val or "").lower(), uur_val, (best_val or "").lower())
                 if dedup_key in _seen:
                     continue
                 _seen.add(dedup_key)
