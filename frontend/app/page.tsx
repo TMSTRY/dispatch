@@ -210,15 +210,15 @@ export default function Home() {
             <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
           </div>
         </div>
-        <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">
-        v{VERSION}{" · "}
-        <button
-          onClick={() => setShowHelp(true)}
-          className="underline hover:text-gray-500 dark:hover:text-gray-400 transition"
-        >
-          hoe het werkt
-        </button>
-      </p>
+        <div className="text-center pb-6 flex flex-col items-center gap-1.5">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition"
+          >
+            hoe het werkt
+          </button>
+          <p className="text-gray-400 dark:text-gray-600 text-xs">v{VERSION}</p>
+        </div>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       </div>
     );
@@ -445,15 +445,15 @@ export default function Home() {
           </Card>
         </div>
       </div>
-      <p className="text-center text-gray-300 dark:text-gray-600 text-xs pb-4">
-        v{VERSION}{" · "}
+      <div className="text-center pb-6 flex flex-col items-center gap-1.5">
         <button
           onClick={() => setShowHelp(true)}
-          className="underline hover:text-gray-500 dark:hover:text-gray-400 transition"
+          className="text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition"
         >
           hoe het werkt
         </button>
-      </p>
+        <p className="text-gray-400 dark:text-gray-600 text-xs">v{VERSION}</p>
+      </div>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
