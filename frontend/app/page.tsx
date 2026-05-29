@@ -178,36 +178,41 @@ export default function Home() {
   if (result) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
-        {/* Prison hero — tall so the building is clearly visible */}
-        <div className="relative overflow-hidden" style={{ height: "62vh", minHeight: "460px" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/hero-prison.PNG"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
-          {/* Light mode: white gradient at bottom */}
-          <div
-            className="absolute inset-x-0 bottom-0 opacity-100 dark:opacity-0 transition-opacity duration-300"
-            style={{ height: "55%", background: "linear-gradient(to top, white 0%, transparent 100%)" }}
-          />
-          {/* Dark mode: dark gradient at bottom */}
-          <div
-            className="absolute inset-x-0 bottom-0 opacity-0 dark:opacity-100 transition-opacity duration-300"
-            style={{ height: "55%", background: "linear-gradient(to top, rgb(17,24,39) 0%, transparent 100%)" }}
-          />
-          {/* Title — sits in the middle of the image, well above the overlap zone */}
-          <div className="absolute inset-x-0 text-center" style={{ bottom: "38%" }}>
-            <h1 className="text-3xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              Dispatch Generator
-            </h1>
+        {/* Prison hero + spillover-gradient wrapper */}
+        <div className="relative">
+          {/* Image container — overflow-hidden clips only the photo */}
+          <div className="relative overflow-hidden" style={{ height: "82vh", minHeight: "520px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-prison.PNG"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-center"
+            />
+            {/* Title */}
+            <div className="absolute inset-x-0 text-center" style={{ bottom: "42%" }}>
+              <h1 className="text-3xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                Dispatch Generator
+              </h1>
+            </div>
           </div>
-        </div>
 
-        {/* Cards pulled up so they overlap the bottom of the hero */}
-        <div className="relative -mt-28 px-4 pb-6">
-          <div className="max-w-4xl mx-auto">
-            <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
+          {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone */}
+          {/* Light mode */}
+          <div
+            className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
+            style={{ top: "calc(82vh * 0.48)", height: "calc(82vh * 0.52 + 11rem)", background: "linear-gradient(to top, white 0%, white 4%, transparent 72%)" }}
+          />
+          {/* Dark mode */}
+          <div
+            className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
+            style={{ top: "calc(82vh * 0.48)", height: "calc(82vh * 0.52 + 11rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 4%, transparent 72%)" }}
+          />
+
+          {/* Cards pulled up into the hero */}
+          <div className="relative -mt-44 px-4 pb-6">
+            <div className="max-w-4xl mx-auto">
+              <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
+            </div>
           </div>
         </div>
         <div className="text-center pb-6 flex flex-col items-center gap-1.5">
@@ -227,34 +232,38 @@ export default function Home() {
   // ── Upload page ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Aerial hero — tall so the city is clearly visible */}
-      <div className="relative overflow-hidden" style={{ height: "52vh", minHeight: "380px" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero-aerial.PNG"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-        {/* Light mode: white gradient at bottom */}
-        <div
-          className="absolute inset-x-0 bottom-0 opacity-100 dark:opacity-0 transition-opacity duration-300"
-          style={{ height: "55%", background: "linear-gradient(to top, white 0%, transparent 100%)" }}
-        />
-        {/* Dark mode: dark gradient at bottom */}
-        <div
-          className="absolute inset-x-0 bottom-0 opacity-0 dark:opacity-100 transition-opacity duration-300"
-          style={{ height: "55%", background: "linear-gradient(to top, rgb(17,24,39) 0%, transparent 100%)" }}
-        />
-        {/* Title */}
-        <div className="absolute inset-x-0 text-center" style={{ bottom: "42%" }}>
-          <h1 className="text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-            Dispatch Generator
-          </h1>
+      {/* Aerial hero + spillover-gradient wrapper */}
+      <div className="relative">
+        {/* Image container — overflow-hidden clips only the photo */}
+        <div className="relative overflow-hidden" style={{ height: "68vh", minHeight: "440px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-aerial.PNG"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          {/* Title */}
+          <div className="absolute inset-x-0 text-center" style={{ bottom: "46%" }}>
+            <h1 className="text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              Dispatch Generator
+            </h1>
+          </div>
         </div>
-      </div>
 
-      {/* Cards pulled up so they overlap the bottom of the hero */}
-      <div className="relative -mt-20 px-4 pb-6">
+        {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone */}
+        {/* Light mode */}
+        <div
+          className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
+          style={{ top: "calc(68vh * 0.48)", height: "calc(68vh * 0.52 + 9rem)", background: "linear-gradient(to top, white 0%, white 4%, transparent 72%)" }}
+        />
+        {/* Dark mode */}
+        <div
+          className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
+          style={{ top: "calc(68vh * 0.48)", height: "calc(68vh * 0.52 + 9rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 4%, transparent 72%)" }}
+        />
+
+        {/* Cards pulled up into the hero */}
+        <div className="relative -mt-36 px-4 pb-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
@@ -444,7 +453,8 @@ export default function Home() {
             )}
           </Card>
         </div>
-      </div>
+      </div>{/* end cards */}
+      </div>{/* end spillover-gradient wrapper */}
       <div className="text-center pb-6 flex flex-col items-center gap-1.5">
         <button
           onClick={() => setShowHelp(true)}
