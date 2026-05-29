@@ -49,14 +49,12 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Check existing auth
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem("dispatch_auth") === "1") {
       setAuthed(true);
     }
   }, []);
 
-  // Create session on auth
   useEffect(() => {
     if (authed && !sessionId) {
       createSession().then(setSessionId).catch(() => setError("Sessie aanmaken mislukt"));
@@ -130,7 +128,6 @@ export default function Home() {
     setLoadingMsg(LOADING_MESSAGES[0]);
     setError(null);
 
-    // Rotate loading messages every 1.8 s
     let msgIdx = 0;
     loadingTimerRef.current = setInterval(() => {
       msgIdx = Math.min(msgIdx + 1, LOADING_MESSAGES.length - 1);
@@ -174,304 +171,206 @@ export default function Home() {
     return <AuthGate onAuth={() => setAuthed(true)} />;
   }
 
-  // ── Results page ──────────────────────────────────────────────────────────────
+  // ── Results page ─────────────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
-        {/* Prison hero + spillover-gradient wrapper */}
+      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
         <div className="relative">
-          {/* Image container — overflow-hidden clips only the photo */}
+          {/* Hero image */}
           <div className="relative overflow-hidden" style={{ height: "82vh", minHeight: "520px" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero-prison.PNG"
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover object-center"
-            />
+            <img src="/hero-prison.PNG" alt=""
+              className="absolute inset-0 w-full h-full object-cover object-center" />
+            {/* Top vignette + blue tint */}
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ background: "linear-gradient(180deg, rgba(8,12,20,0.55) 0%, transparent 45%)" }} />
             {/* Title */}
-            <div className="absolute inset-x-0 text-center" style={{ bottom: "42%" }}>
-              <h1 className="text-3xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+            <div className="absolute inset-x-0 text-center" style={{ top: "22%" }}>
+              <p className="text-[11px] font-semibold tracking-[0.3em] uppercase text-white/50 mb-2">
+                Intern systeem
+              </p>
+              <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]">
                 Dispatch Generator
               </h1>
             </div>
           </div>
 
-          {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone.
-               Starts at 30% down the image, fully opaque well before the image clips,
-               so there is no hard edge — just a smooth fade into the page background. */}
-          {/* Light mode */}
-          <div
-            className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
-            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, white 0%, white 38%, transparent 85%)" }}
-          />
-          {/* Dark mode */}
-          <div
-            className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
-            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 38%, transparent 85%)" }}
-          />
+          {/* Bottom gradient — spills behind cards */}
+          <div className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
+            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, #F8FAFC 0%, #F8FAFC 38%, transparent 85%)" }} />
+          <div className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
+            style={{ top: "calc(82vh * 0.30)", height: "calc(82vh * 0.70 + 11rem)", background: "linear-gradient(to top, #080C14 0%, #080C14 38%, transparent 85%)" }} />
 
-          {/* Cards pulled up into the hero */}
+          {/* Cards */}
           <div className="relative -mt-44 px-4 pb-6">
             <div className="max-w-4xl mx-auto">
               <ResultsPreview result={result} onBack={() => setResult(null)} onReset={reset} />
             </div>
           </div>
         </div>
-        <div className="text-center pb-6 flex flex-col items-center gap-1.5">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition"
-          >
-            hoe het werkt
-          </button>
-          <p className="text-gray-400 dark:text-gray-600 text-xs">v{VERSION}</p>
-        </div>
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+        <Footer onHelp={() => setShowHelp(true)} />
+        {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       </div>
     );
   }
 
-  // ── Upload page ───────────────────────────────────────────────────────────────
+  // ── Upload page ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Aerial hero + spillover-gradient wrapper */}
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
       <div className="relative">
-        {/* Image container — overflow-hidden clips only the photo */}
+        {/* Hero image */}
         <div className="relative overflow-hidden" style={{ height: "68vh", minHeight: "440px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/hero-aerial.PNG"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
+          <img src="/hero-aerial.PNG" alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center" />
+          {/* Top vignette */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: "linear-gradient(180deg, rgba(8,12,20,0.5) 0%, transparent 40%)" }} />
           {/* Title */}
-          <div className="absolute inset-x-0 text-center" style={{ bottom: "46%" }}>
-            <h1 className="text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+          <div className="absolute inset-x-0 text-center" style={{ top: "20%" }}>
+            <p className="text-[11px] font-semibold tracking-[0.3em] uppercase text-white/50 mb-2">
+              Intern systeem
+            </p>
+            <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]">
               Dispatch Generator
             </h1>
           </div>
         </div>
 
-        {/* Gradients live OUTSIDE overflow-hidden so they spill into the card zone.
-             Starts at 30% down the image, fully opaque well before the image clips,
-             so there is no hard edge — just a smooth fade into the page background. */}
-        {/* Light mode */}
-        <div
-          className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
-          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, white 0%, white 38%, transparent 85%)" }}
-        />
-        {/* Dark mode */}
-        <div
-          className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
-          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, rgb(17,24,39) 0%, rgb(17,24,39) 38%, transparent 85%)" }}
-        />
+        {/* Bottom gradient — spills behind cards */}
+        <div className="absolute inset-x-0 opacity-100 dark:opacity-0 pointer-events-none transition-opacity duration-300"
+          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, #F8FAFC 0%, #F8FAFC 38%, transparent 85%)" }} />
+        <div className="absolute inset-x-0 opacity-0 dark:opacity-100 pointer-events-none transition-opacity duration-300"
+          style={{ top: "calc(68vh * 0.30)", height: "calc(68vh * 0.70 + 9rem)", background: "linear-gradient(to top, #080C14 0%, #080C14 38%, transparent 85%)" }} />
 
-        {/* Cards pulled up into the hero */}
+        {/* Cards */}
         <div className="relative -mt-36 px-4 pb-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-red-700 dark:text-red-300 text-sm flex items-center justify-between">
-              <span>{error}</span>
-              <button onClick={() => setError(null)} className="ml-3 text-red-500 dark:text-red-400 font-bold leading-none">×</button>
-            </div>
-          )}
+          <div className="max-w-4xl mx-auto space-y-4">
 
-          {/* Step 1 — Celbezetting */}
-          <Card step="1" title="Celbezetting" required>
-            {celFile ? (
-              <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-center gap-3 bg-red-50 dark:bg-red-500/[0.08] border border-red-100 dark:border-red-400/20 rounded-xl px-5 py-3.5">
+                <span className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-400/20 flex items-center justify-center text-red-500 text-xs font-bold flex-shrink-0">!</span>
+                <span className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</span>
+                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-lg leading-none transition">×</button>
+              </div>
+            )}
+
+            {/* Step 1 — Celbezetting */}
+            <Card step="1" title="Celbezetting" required>
+              {celFile ? (
+                <FileSuccess
+                  name={celFile}
+                  meta={`${celCount} gedetineerden geladen`}
+                  onReplace={() => { setCelFile(null); setCelCount(null); }}
+                />
+              ) : (
+                <DropZone label="Upload celbezetting (.xlsx)" onFiles={handleCelbezetting}
+                  uploading={loading} disabled={loading} />
+              )}
+            </Card>
+
+            {/* Step 2 — Dispatch */}
+            <Card step="2" title="Dispatch-bestanden" required
+              badge={dispatchFiles.filter(f => f.category === "dispatch").length}>
+              <DropZone label="Upload dispatch-bestanden (.xlsx)" multiple
+                onFiles={(f) => handleDispatch(f, "dispatch")} uploading={loading} disabled={loading || !celFile} />
+              <FileList files={dispatchFiles.filter(f => f.category === "dispatch")} onRemove={handleRemoveDispatch} />
+            </Card>
+
+            {/* Step 3 — Agenda */}
+            <Card step="3" title="Agenda / Hoorzitting"
+              badge={dispatchFiles.filter(f => f.category === "agenda").length}>
+              <DropZone label="Upload agenda- of hoorzittingsbestand (.xlsx)" multiple
+                onFiles={(f) => handleDispatch(f, "agenda")} uploading={loading} disabled={loading || !celFile} />
+              <FileList files={dispatchFiles.filter(f => f.category === "agenda")} onRemove={handleRemoveDispatch} />
+            </Card>
+
+            {/* Step 4 — Bezoek */}
+            <Card step="4" title="Gereserveerde bezoeken"
+              badge={dispatchFiles.filter(f => f.category === "bezoek").length}>
+              <DropZone label="Upload bezoekbestand (.xlsx)" multiple
+                onFiles={(f) => handleDispatch(f, "bezoek")} uploading={loading} disabled={loading || !celFile} />
+              <FileList files={dispatchFiles.filter(f => f.category === "bezoek")} onRemove={handleRemoveDispatch} />
+            </Card>
+
+            {/* Step 5 — Paleislijst */}
+            <Card step="5" title="Paleislijst">
+              {paleisFile ? (
+                <FileSuccess name={paleisFile} onReplace={() => setPaleisFile(null)} />
+              ) : (
+                <DropZone label="Upload paleislijst (.xlsx)" onFiles={handlePaleislijst}
+                  uploading={loading} disabled={loading || !celFile} />
+              )}
+            </Card>
+
+            {/* Step 6 — Manual entries */}
+            <Card step="6" title="Manuele invoer">
+              <ManualEntryTable sessionId={sessionId} rows={manualRows} onChange={setManualRows} />
+            </Card>
+
+            {/* Step 7 — Date + Generate */}
+            <Card step="7" title="Datum en genereren" required>
+              <div className="flex items-end gap-4 flex-wrap">
                 <div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-300">{celFile}</p>
-                  <p className="text-xs text-green-600 dark:text-green-400">{celCount} gedetineerden geladen</p>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+                    Datum dispatchlijst
+                  </label>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                    className="border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition"
+                    style={{ focusRingColor: "rgba(61,124,247,0.4)" } as React.CSSProperties}
+                  />
                 </div>
                 <button
-                  onClick={() => { setCelFile(null); setCelCount(null); }}
-                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 text-xs underline"
+                  onClick={handleGenerate}
+                  disabled={loading || !celFile || dispatchFiles.length === 0}
+                  className="relative flex items-center gap-2 px-7 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg, #3D7CF7 0%, #8B5CF6 100%)",
+                    boxShadow: (!loading && celFile && dispatchFiles.length > 0)
+                      ? "0 0 24px rgba(61,124,247,0.4), 0 4px 16px rgba(0,0,0,0.2)"
+                      : "none",
+                  }}
                 >
-                  Vervangen
+                  {loading ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}>
+                        <path strokeLinecap="round" d="M12 3a9 9 0 1 0 9 9" />
+                      </svg>
+                      {loadingMsg}
+                    </>
+                  ) : (
+                    <>
+                      Genereer dispatchlijst
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </>
+                  )}
                 </button>
               </div>
-            ) : (
-              <DropZone
-                label="Upload celbezetting (.xlsx)"
-                onFiles={handleCelbezetting}
-                uploading={loading}
-                disabled={loading}
-              />
-            )}
-          </Card>
+              {(!celFile || dispatchFiles.length === 0) && (
+                <p className="text-xs text-slate-400 dark:text-slate-600 mt-3">
+                  Upload eerst de celbezetting en minstens één dispatch-bestand.
+                </p>
+              )}
+            </Card>
 
-          {/* Step 2 — Dispatch files */}
-          <Card step="2" title="Dispatch-bestanden" required badge={dispatchFiles.filter(f => f.category === "dispatch").length}>
-            <DropZone
-              label="Upload dispatch-bestanden (.xlsx)"
-              multiple
-              onFiles={(files) => handleDispatch(files, "dispatch")}
-              uploading={loading}
-              disabled={loading || !celFile}
-            />
-            {dispatchFiles.filter(f => f.category === "dispatch").length > 0 && (
-              <ul className="mt-3 space-y-1">
-                {dispatchFiles.filter(f => f.category === "dispatch").map((f) => (
-                  <li
-                    key={f.index}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
-                  >
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {f.filename}{" "}
-                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
-                    </span>
-                    <button
-                      onClick={() => handleRemoveDispatch(f.index)}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      Verwijder
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Step 3 — Agenda / Hoorzitting */}
-          <Card step="3" title="Agenda / Hoorzitting (optioneel)" badge={dispatchFiles.filter(f => f.category === "agenda").length}>
-            <DropZone
-              label="Upload agenda- of hoorzittingsbestand (.xlsx)"
-              multiple
-              onFiles={(files) => handleDispatch(files, "agenda")}
-              uploading={loading}
-              disabled={loading || !celFile}
-            />
-            {dispatchFiles.filter(f => f.category === "agenda").length > 0 && (
-              <ul className="mt-3 space-y-1">
-                {dispatchFiles.filter(f => f.category === "agenda").map((f) => (
-                  <li
-                    key={f.index}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
-                  >
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {f.filename}{" "}
-                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
-                    </span>
-                    <button
-                      onClick={() => handleRemoveDispatch(f.index)}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      Verwijder
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Step 4 — Gereserveerde bezoeken */}
-          <Card step="4" title="Gereserveerde bezoeken (optioneel)" badge={dispatchFiles.filter(f => f.category === "bezoek").length}>
-            <DropZone
-              label="Upload bezoekbestand (.xlsx)"
-              multiple
-              onFiles={(files) => handleDispatch(files, "bezoek")}
-              uploading={loading}
-              disabled={loading || !celFile}
-            />
-            {dispatchFiles.filter(f => f.category === "bezoek").length > 0 && (
-              <ul className="mt-3 space-y-1">
-                {dispatchFiles.filter(f => f.category === "bezoek").map((f) => (
-                  <li
-                    key={f.index}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 text-sm"
-                  >
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {f.filename}{" "}
-                      <span className="text-gray-400 dark:text-gray-500 text-xs">({f.rows} rijen)</span>
-                    </span>
-                    <button
-                      onClick={() => handleRemoveDispatch(f.index)}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      Verwijder
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Step 5 — Paleislijst */}
-          <Card step="5" title="Paleislijst (optioneel)">
-            {paleisFile ? (
-              <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">{paleisFile}</p>
-                <button
-                  onClick={() => setPaleisFile(null)}
-                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 text-xs underline"
-                >
-                  Vervangen
-                </button>
-              </div>
-            ) : (
-              <DropZone
-                label="Upload paleislijst (.xlsx) — optioneel"
-                onFiles={handlePaleislijst}
-                uploading={loading}
-                disabled={loading || !celFile}
-              />
-            )}
-          </Card>
-
-          {/* Step 6 — Manual entries */}
-          <Card step="6" title="Manuele invoer (optioneel)">
-            <ManualEntryTable
-              sessionId={sessionId}
-              rows={manualRows}
-              onChange={setManualRows}
-            />
-          </Card>
-
-          {/* Step 7 — Date + Generate */}
-          <Card step="7" title="Datum en genereren" required>
-            <div className="flex items-end gap-4 flex-wrap">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Datum dispatchlijst
-                </label>
-                <input
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                onClick={handleGenerate}
-                disabled={loading || !celFile || dispatchFiles.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg px-6 py-2.5 text-sm transition"
-              >
-                {loading ? loadingMsg : "Genereer dispatchlijst"}
-              </button>
-            </div>
-            {(!celFile || dispatchFiles.length === 0) && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                Upload eerst de celbezetting en minstens één dispatch-bestand.
-              </p>
-            )}
-          </Card>
+          </div>
         </div>
-      </div>{/* end cards */}
-      </div>{/* end spillover-gradient wrapper */}
-      <div className="text-center pb-6 flex flex-col items-center gap-1.5">
-        <button
-          onClick={() => setShowHelp(true)}
-          className="text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition"
-        >
-          hoe het werkt
-        </button>
-        <p className="text-gray-400 dark:text-gray-600 text-xs">v{VERSION}</p>
       </div>
+
+      <Footer onHelp={() => setShowHelp(true)} />
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function Card({
   step,
@@ -487,22 +386,119 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+    <div className="glass rounded-2xl p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <span
+          className="flex-shrink-0 w-7 h-7 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm"
+          style={{ background: "linear-gradient(135deg, #3D7CF7 0%, #8B5CF6 100%)" }}
+        >
           {step}
         </span>
-        <h2 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-          {title}
-          {required && <span className="text-red-500 text-xs">*</span>}
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <h2 className="font-semibold text-slate-800 dark:text-white text-[15px] leading-snug">
+            {title}
+          </h2>
+          {required && (
+            <span className="text-[10px] font-semibold text-red-400 border border-red-400/35 rounded-full px-2 py-px leading-tight">
+              verplicht
+            </span>
+          )}
           {badge !== undefined && badge > 0 && (
-            <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full">
+            <span
+              className="text-white text-[11px] font-bold px-2.5 py-px rounded-full"
+              style={{ background: "linear-gradient(135deg, #3D7CF7 0%, #8B5CF6 100%)" }}
+            >
               {badge}
             </span>
           )}
-        </h2>
+        </div>
       </div>
       {children}
+    </div>
+  );
+}
+
+function FileSuccess({
+  name,
+  meta,
+  onReplace,
+}: {
+  name: string;
+  meta?: string;
+  onReplace: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-400/[0.06] border border-emerald-100 dark:border-emerald-400/20 rounded-xl px-4 py-3.5">
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 truncate">{name}</p>
+          {meta && <p className="text-xs text-emerald-600 dark:text-emerald-500">{meta}</p>}
+        </div>
+      </div>
+      <button
+        onClick={onReplace}
+        className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 font-medium ml-3 flex-shrink-0 transition"
+      >
+        Vervangen
+      </button>
+    </div>
+  );
+}
+
+function FileList({
+  files,
+  onRemove,
+}: {
+  files: DispatchFile[];
+  onRemove: (index: number) => void;
+}) {
+  if (!files.length) return null;
+  return (
+    <ul className="mt-3 space-y-1.5">
+      {files.map((f) => (
+        <li
+          key={f.index}
+          className="flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-xl px-4 py-2.5"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-1 h-5 rounded-full flex-shrink-0"
+              style={{ background: "linear-gradient(180deg, #3D7CF7, #8B5CF6)" }} />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{f.filename}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">{f.rows} rijen</p>
+            </div>
+          </div>
+          <button
+            onClick={() => onRemove(f.index)}
+            className="text-slate-300 dark:text-slate-600 hover:text-red-400 dark:hover:text-red-400 text-lg leading-none ml-3 flex-shrink-0 transition"
+            title="Verwijderen"
+          >
+            ×
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Footer({ onHelp }: { onHelp: () => void }) {
+  return (
+    <div className="text-center py-8 flex flex-col items-center gap-2">
+      <button
+        onClick={onHelp}
+        className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
+        style={{ color: "#3D7CF7" }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+        </svg>
+        hoe het werkt
+      </button>
+      <p className="text-xs text-slate-300 dark:text-slate-700">v{VERSION}</p>
     </div>
   );
 }

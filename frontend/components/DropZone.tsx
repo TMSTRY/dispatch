@@ -25,8 +25,8 @@ export default function DropZone({
     e.preventDefault();
     setDragging(false);
     if (disabled) return;
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.name.endsWith(".xlsx") || f.name.endsWith(".xls")
+    const files = Array.from(e.dataTransfer.files).filter(
+      (f) => f.name.endsWith(".xlsx") || f.name.endsWith(".xls")
     );
     if (files.length) onFiles(files);
   }
@@ -44,13 +44,18 @@ export default function DropZone({
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       className={`
-        border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition
-        ${dragging
-          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-          : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-700/40"
-        }
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        relative rounded-xl py-7 px-6 text-center cursor-pointer transition-all duration-200
+        ${disabled ? "opacity-40 cursor-not-allowed" : ""}
       `}
+      style={{
+        border: dragging
+          ? "1.5px dashed #3D7CF7"
+          : "1.5px dashed rgba(148,163,184,0.35)",
+        background: dragging
+          ? "rgba(61,124,247,0.06)"
+          : "rgba(248,250,252,0.6)",
+        boxShadow: dragging ? "0 0 0 3px rgba(61,124,247,0.12)" : "none",
+      }}
     >
       <input
         ref={inputRef}
@@ -60,9 +65,33 @@ export default function DropZone({
         onChange={handleChange}
         className="hidden"
       />
-      <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{label}</p>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        {uploading ? "Bezig met uploaden..." : "Sleep hier of klik om te kiezen (.xlsx / .xls)"}
+
+      {/* Upload icon */}
+      <div
+        className="w-10 h-10 mx-auto mb-3 rounded-xl flex items-center justify-center transition-all duration-200"
+        style={{
+          background: dragging
+            ? "linear-gradient(135deg, #3D7CF7, #8B5CF6)"
+            : "rgba(15,23,42,0.06)",
+        }}
+      >
+        {uploading ? (
+          <svg className="w-5 h-5 spin" viewBox="0 0 24 24" fill="none"
+            stroke={dragging ? "white" : "#94a3b8"} strokeWidth={2}>
+            <path strokeLinecap="round" d="M12 3a9 9 0 1 0 9 9" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"
+            stroke={dragging ? "white" : "#94a3b8"} strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+          </svg>
+        )}
+      </div>
+
+      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+        {uploading ? "Bezig met uploaden…" : "Sleep of klik · .xlsx / .xls"}
       </p>
     </div>
   );

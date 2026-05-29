@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ───────────────────────────────────────────────────────────────── */
 body {
-  @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  @apply antialiased bg-slate-50 text-slate-900 dark:bg-[#080C14] dark:text-slate-100;
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+.dark ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.35); }
+
+/* ── Glass card ─────────────────────────────────────────────────────────── */
+/* Light mode: clean white with soft shadow */
+.glass {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode: frosted glass over deep navy */
+.dark .glass {
+  background: rgba(255, 255, 255, 0.038);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+/* ── Accent gradient helper ─────────────────────────────────────────────── */
+.accent-gradient {
+  background: linear-gradient(135deg, #3D7CF7 0%, #8B5CF6 100%);
+}
+
+/* ── Spinning loader ────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin { animation: spin 0.8s linear infinite; }
+
+/* ── Smooth date input in dark mode ─────────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
 }

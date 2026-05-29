@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { ManualRow, AutocompleteResult } from "@/lib/types";
 import { autocomplete } from "@/lib/api";
 
@@ -10,7 +10,14 @@ interface Props {
 }
 
 function newRow(): ManualRow {
-  return { id: Math.random().toString(36).slice(2), uur: "", celnr: "", naam: "", voornaam: "", bestemming: "" };
+  return {
+    id: Math.random().toString(36).slice(2),
+    uur: "",
+    celnr: "",
+    naam: "",
+    voornaam: "",
+    bestemming: "",
+  };
 }
 
 export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
@@ -45,10 +52,14 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
     if (match && match.cel !== null && String(match.cel) !== row.celnr.trim()) {
       setCelWarnings((prev) => ({
         ...prev,
-        [row.id]: `Cel gecorrigeerd: ${row.celnr} → ${match.cel} (celbezetting)`,
+        [row.id]: `Cel gecorrigeerd: ${row.celnr} → ${match.cel}`,
       }));
     } else {
-      setCelWarnings((prev) => { const n = { ...prev }; delete n[row.id]; return n; });
+      setCelWarnings((prev) => {
+        const n = { ...prev };
+        delete n[row.id];
+        return n;
+      });
     }
   }
 
@@ -62,21 +73,30 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
     );
     setSuggestions([]);
     setActiveRowId(null);
-    setCelWarnings((prev) => { const n = { ...prev }; delete n[rowId]; return n; });
+    setCelWarnings((prev) => {
+      const n = { ...prev };
+      delete n[rowId];
+      return n;
+    });
   }
 
+  const cellCls =
+    "border-b border-slate-100 dark:border-white/[0.05] p-1";
+
   const inputCls =
-    "w-full px-1 py-0.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded";
+    "w-full px-2 py-1 text-sm bg-transparent text-slate-800 dark:text-slate-200 " +
+    "placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none " +
+    "focus:bg-brand-500/[0.06] dark:focus:bg-brand-500/[0.08] rounded transition";
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+    <div className="overflow-x-auto -mx-1">
+      <table className="w-full text-sm border-collapse min-w-[560px]">
         <thead>
-          <tr className="bg-gray-100 dark:bg-gray-700">
+          <tr>
             {["Uur", "Celnr", "Naam", "Voornaam", "Bestemming", ""].map((h) => (
               <th
                 key={h}
-                className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-left font-semibold text-gray-700 dark:text-gray-200"
+                className="border-b border-slate-200 dark:border-white/[0.08] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500"
               >
                 {h}
               </th>
@@ -86,25 +106,16 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
         <tbody>
           {rows.map((row) => (
             <>
-              <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="border border-gray-300 dark:border-gray-600 p-1">
-                  <input
-                    value={row.uur}
-                    onChange={(e) => update(row.id, "uur", e.target.value)}
-                    placeholder="08:00"
-                    className={inputCls}
-                  />
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition">
+                <td className={cellCls} style={{ width: "80px" }}>
+                  <input value={row.uur} onChange={(e) => update(row.id, "uur", e.target.value)}
+                    placeholder="08:00" className={inputCls} />
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600 p-1">
-                  <input
-                    value={row.celnr}
-                    onChange={(e) => update(row.id, "celnr", e.target.value)}
-                    onBlur={() => validateCell(row)}
-                    placeholder="522"
-                    className={inputCls}
-                  />
+                <td className={cellCls} style={{ width: "72px" }}>
+                  <input value={row.celnr} onChange={(e) => update(row.id, "celnr", e.target.value)}
+                    onBlur={() => validateCell(row)} placeholder="522" className={inputCls} />
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600 p-1 relative">
+                <td className={`${cellCls} relative`}>
                   <input
                     value={row.naam}
                     onChange={(e) => update(row.id, "naam", e.target.value)}
@@ -114,12 +125,17 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
                     className={inputCls}
                   />
                   {activeRowId === row.id && suggestions.length > 0 && (
-                    <ul className="absolute z-50 left-0 top-full mt-0.5 w-72 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg text-xs max-h-40 overflow-y-auto">
+                    <ul className="absolute z-50 left-0 top-full mt-1 w-72 rounded-xl overflow-hidden shadow-2xl text-xs border"
+                      style={{
+                        background: "rgba(13,20,36,0.97)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        backdropFilter: "blur(20px)",
+                      }}>
                       {suggestions.map((s) => (
                         <li
                           key={s.label}
                           onMouseDown={() => applySuggestion(row.id, s)}
-                          className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/40 cursor-pointer text-gray-800 dark:text-gray-200"
+                          className="px-3 py-2.5 hover:bg-white/[0.06] cursor-pointer text-slate-200 transition"
                         >
                           {s.label}
                         </li>
@@ -127,26 +143,18 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
                     </ul>
                   )}
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600 p-1">
-                  <input
-                    value={row.voornaam}
-                    onChange={(e) => update(row.id, "voornaam", e.target.value)}
-                    placeholder="Voornaam"
-                    className={inputCls}
-                  />
+                <td className={cellCls}>
+                  <input value={row.voornaam} onChange={(e) => update(row.id, "voornaam", e.target.value)}
+                    placeholder="Voornaam" className={inputCls} />
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600 p-1">
-                  <input
-                    value={row.bestemming}
-                    onChange={(e) => update(row.id, "bestemming", e.target.value)}
-                    placeholder="Bestemming"
-                    className={inputCls}
-                  />
+                <td className={cellCls}>
+                  <input value={row.bestemming} onChange={(e) => update(row.id, "bestemming", e.target.value)}
+                    placeholder="Bestemming" className={inputCls} />
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600 p-1 text-center">
+                <td className={cellCls} style={{ width: "36px" }}>
                   <button
                     onClick={() => onChange(rows.filter((r) => r.id !== row.id))}
-                    className="text-red-500 hover:text-red-700 font-bold text-lg leading-none"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition text-base leading-none"
                     title="Rij verwijderen"
                   >
                     ×
@@ -155,11 +163,8 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
               </tr>
               {celWarnings[row.id] && (
                 <tr key={`${row.id}-warn`}>
-                  <td
-                    colSpan={6}
-                    className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 text-xs px-3 py-1 border-b border-yellow-200 dark:border-yellow-800"
-                  >
-                    {celWarnings[row.id]}
+                  <td colSpan={6} className="px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/[0.07] border-b border-amber-100 dark:border-amber-400/20">
+                    ⚠ {celWarnings[row.id]}
                   </td>
                 </tr>
               )}
@@ -167,17 +172,19 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
           ))}
         </tbody>
       </table>
-      <div className="mt-3 flex flex-col gap-2 items-start">
+
+      {/* Add row controls */}
+      <div className="mt-4 flex flex-col gap-2 items-start">
         <button
           onClick={() => onChange([...rows, newRow()])}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+          className="text-xs font-medium text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition flex items-center gap-1"
         >
-          + Rij toevoegen
+          <span className="text-base leading-none">+</span> Rij toevoegen
         </button>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onChange([...rows, ...Array.from({ length: bulkCount }, newRow)])}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+            className="text-xs font-medium text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition"
           >
             +
           </button>
@@ -187,11 +194,11 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
             max={50}
             value={bulkCount}
             onChange={(e) => setBulkCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
-            className="w-14 px-2 py-0.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="w-14 px-2 py-1 text-xs text-center border border-slate-200 dark:border-white/[0.1] rounded-lg bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/40"
           />
           <button
             onClick={() => onChange([...rows, ...Array.from({ length: bulkCount }, newRow)])}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+            className="text-xs font-medium text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition"
           >
             rijen toevoegen
           </button>
