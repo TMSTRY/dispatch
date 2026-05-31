@@ -135,6 +135,32 @@ def match_and_correct(
                     ) >= 40:
                         record = best
 
+        # 5th fallback: the service file mistakenly split a compound surname
+        # across naam and voornaam columns.
+        # Example: celbezetting has naam="Ziane Berroudia", voornaam="Izzedine"
+        #          but the service file has naam="Ziane", voornaam="Berroudia".
+        # Strategy: treat potential_naam + " " + potential_voor as a compound
+        # surname and look it up in naam_only_lookup (exact, then fuzzy).
+        if record is None and potential_voor:
+            naam_only = celbezetting.get("naam_only_lookup", {})
+            compound_norm = normalize_name(f"{potential_naam} {potential_voor}")
+            # Exact compound lookup
+            candidates = naam_only.get(compound_norm, [])
+            if len(candidates) == 1:
+                record = candidates[0]
+            elif not candidates:
+                # Fuzzy compound lookup (handles minor typos in either part)
+                compound_match = process.extractOne(
+                    compound_norm,
+                    list(naam_only.keys()),
+                    scorer=fuzz.ratio,
+                    score_cutoff=88,
+                )
+                if compound_match:
+                    candidates = naam_only[compound_match[0]]
+                    if len(candidates) == 1:
+                        record = candidates[0]
+
         if record is None:
             unmatched.append(UnmatchedEntry(
                 naam=naam,

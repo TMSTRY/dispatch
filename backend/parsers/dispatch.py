@@ -118,10 +118,19 @@ def _detect_keuken_cols(col_map: dict) -> tuple[int | None, int | None]:
     return idx_wd, idx_we
 
 
+# Sources where a missing uur means the row is useless and must be dropped.
+_UUR_REQUIRED_KEYWORDS = ("keuken", "magazijn", "kleedkamer")
+
+
 def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dict]:
     wb = open_workbook(file_bytes, source_name)
 
     fallback_uur, fallback_best = _detect_fallbacks(source_name)
+
+    # For keuken / magazijn / kleedkamer files, rows without a time are noise
+    # (e.g. template filler rows). Drop them instead of placing them at the
+    # bottom of the list with uur=None.
+    is_uur_required = any(kw in source_name.lower() for kw in _UUR_REQUIRED_KEYWORDS)
 
     rows_out: list[dict] = []
 
@@ -279,6 +288,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 # Store both times; main.py resolves which to use based on target date
                 uur_wd = _to_time(row[idx_uur_wd] if len(row) > idx_uur_wd else None)
                 uur_we = _to_time(row[idx_uur_we] if len(row) > idx_uur_we else None)
+                # Skip rows where neither weekday nor weekend time is filled in
+                if uur_wd is None and uur_we is None:
+                    continue
                 rows_out.append({
                     "uur":       None,   # resolved later
                     "uur_wd":    uur_wd,
@@ -302,6 +314,10 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 # Bezoek-specific time correction: 13:15 → 13:00
                 if is_bezoek and uur_val == time(13, 15):
                     uur_val = time(13, 0)
+
+                # Drop timeless rows from time-critical sources
+                if is_uur_required and uur_val is None:
+                    continue
 
                 # Deduplication: same naam + voornaam + uur + bestemming → keep only first.
                 # Including bestemming ensures someone booked for two different
