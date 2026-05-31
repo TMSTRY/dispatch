@@ -170,6 +170,11 @@ def _write_sheet(ws, title: str, disp_date: str, rows: list, is_lijst_disp=False
     for i, row in enumerate(display_rows, start=3):
         _write_data_row(ws, i, row)
 
+    # Print area: A1:H{last_row} — excludes column J ("Geeft hier de juiste datum in")
+    # and any empty space to the right. Row 1 = title, row 2 = headers, rows 3+ = data.
+    last_row = 2 + len(display_rows)
+    ws.print_area = f"A1:H{last_row}"
+
     # Print settings: fit all columns on one page width, portrait A4
     ws.page_setup.orientation = "portrait"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
