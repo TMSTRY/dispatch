@@ -20,12 +20,58 @@ function newRow(): ManualRow {
   };
 }
 
+const NUM_COLS = 5; // uur=0, celnr=1, naam=2, voornaam=3, bestemming=4
+
 export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
   const [suggestions, setSuggestions] = useState<AutocompleteResult[]>([]);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const [celWarnings, setCelWarnings] = useState<Record<string, string>>({});
   const [bulkCount, setBulkCount] = useState(5);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Move focus to a specific cell by row/col index. */
+  function focusCell(rowIdx: number, colIdx: number) {
+    const clamped = Math.max(0, Math.min(NUM_COLS - 1, colIdx));
+    const target = document.querySelector(
+      `[data-mrow="${rowIdx}"][data-mcol="${clamped}"]`
+    ) as HTMLInputElement | null;
+    target?.focus();
+  }
+
+  /** Arrow-key + Enter navigation between cells. */
+  function handleKeyNav(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    rowIdx: number,
+    colIdx: number
+  ) {
+    const el = e.currentTarget;
+
+    switch (e.key) {
+      case "ArrowDown":
+      case "Enter":
+        e.preventDefault();
+        focusCell(rowIdx + 1, colIdx);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        focusCell(rowIdx - 1, colIdx);
+        break;
+      case "ArrowRight":
+        // Only jump to next column when cursor is at the end of the text
+        if (el.selectionStart === el.value.length) {
+          e.preventDefault();
+          focusCell(rowIdx, colIdx + 1);
+        }
+        break;
+      case "ArrowLeft":
+        // Only jump to previous column when cursor is at the start
+        if (el.selectionStart === 0) {
+          e.preventDefault();
+          focusCell(rowIdx, colIdx - 1);
+        }
+        break;
+    }
+  }
 
   function update(id: string, field: keyof ManualRow, value: string) {
     onChange(rows.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
@@ -80,8 +126,7 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
     });
   }
 
-  const cellCls =
-    "border-b border-slate-100 dark:border-white/[0.05] p-1";
+  const cellCls = "border-b border-slate-100 dark:border-white/[0.05] p-1";
 
   const inputCls =
     "w-full px-2 py-1 text-sm bg-transparent text-slate-800 dark:text-slate-200 " +
@@ -104,33 +149,56 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row, rowIdx) => (
             <>
               <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition">
+
+                {/* Uur — col 0 */}
                 <td className={cellCls} style={{ width: "80px" }}>
-                  <input value={row.uur} onChange={(e) => update(row.id, "uur", e.target.value)}
-                    placeholder="08:00" className={inputCls} />
+                  <input
+                    data-mrow={rowIdx} data-mcol={0}
+                    value={row.uur}
+                    onChange={(e) => update(row.id, "uur", e.target.value)}
+                    onKeyDown={(e) => handleKeyNav(e, rowIdx, 0)}
+                    placeholder="08:00"
+                    className={inputCls}
+                  />
                 </td>
+
+                {/* Celnr — col 1 */}
                 <td className={cellCls} style={{ width: "72px" }}>
-                  <input value={row.celnr} onChange={(e) => update(row.id, "celnr", e.target.value)}
-                    onBlur={() => validateCell(row)} placeholder="522" className={inputCls} />
+                  <input
+                    data-mrow={rowIdx} data-mcol={1}
+                    value={row.celnr}
+                    onChange={(e) => update(row.id, "celnr", e.target.value)}
+                    onBlur={() => validateCell(row)}
+                    onKeyDown={(e) => handleKeyNav(e, rowIdx, 1)}
+                    placeholder="522"
+                    className={inputCls}
+                  />
                 </td>
+
+                {/* Naam — col 2 */}
                 <td className={`${cellCls} relative`}>
                   <input
+                    data-mrow={rowIdx} data-mcol={2}
                     value={row.naam}
                     onChange={(e) => update(row.id, "naam", e.target.value)}
                     onFocus={() => setActiveRowId(row.id)}
                     onBlur={() => setTimeout(() => setSuggestions([]), 200)}
+                    onKeyDown={(e) => handleKeyNav(e, rowIdx, 2)}
                     placeholder="NAAM"
                     className={inputCls}
                   />
                   {activeRowId === row.id && suggestions.length > 0 && (
-                    <ul className="absolute z-50 left-0 top-full mt-1 w-72 rounded-xl overflow-hidden shadow-2xl text-xs border"
+                    <ul
+                      className="absolute z-50 left-0 top-full mt-1 w-72 rounded-xl overflow-hidden shadow-2xl text-xs border"
                       style={{
                         background: "rgba(13,20,36,0.97)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         backdropFilter: "blur(20px)",
-                      }}>
+                      }}
+                    >
                       {suggestions.map((s) => (
                         <li
                           key={s.label}
@@ -143,14 +211,32 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
                     </ul>
                   )}
                 </td>
+
+                {/* Voornaam — col 3 */}
                 <td className={cellCls}>
-                  <input value={row.voornaam} onChange={(e) => update(row.id, "voornaam", e.target.value)}
-                    placeholder="Voornaam" className={inputCls} />
+                  <input
+                    data-mrow={rowIdx} data-mcol={3}
+                    value={row.voornaam}
+                    onChange={(e) => update(row.id, "voornaam", e.target.value)}
+                    onKeyDown={(e) => handleKeyNav(e, rowIdx, 3)}
+                    placeholder="Voornaam"
+                    className={inputCls}
+                  />
                 </td>
+
+                {/* Bestemming — col 4 */}
                 <td className={cellCls}>
-                  <input value={row.bestemming} onChange={(e) => update(row.id, "bestemming", e.target.value)}
-                    placeholder="Bestemming" className={inputCls} />
+                  <input
+                    data-mrow={rowIdx} data-mcol={4}
+                    value={row.bestemming}
+                    onChange={(e) => update(row.id, "bestemming", e.target.value)}
+                    onKeyDown={(e) => handleKeyNav(e, rowIdx, 4)}
+                    placeholder="Bestemming"
+                    className={inputCls}
+                  />
                 </td>
+
+                {/* Delete */}
                 <td className={cellCls} style={{ width: "36px" }}>
                   <button
                     onClick={() => onChange(rows.filter((r) => r.id !== row.id))}
@@ -161,6 +247,7 @@ export default function ManualEntryTable({ sessionId, rows, onChange }: Props) {
                   </button>
                 </td>
               </tr>
+
               {celWarnings[row.id] && (
                 <tr key={`${row.id}-warn`}>
                   <td colSpan={6} className="px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/[0.07] border-b border-amber-100 dark:border-amber-400/20">
