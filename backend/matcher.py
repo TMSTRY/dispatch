@@ -172,7 +172,10 @@ def match_and_correct(
             # they are transferred or released and must not appear on the list.
             continue
 
-        correct_cel = record["cel"]
+        # Prefer tijdelijke_cel (temporary placement, e.g. security/punishment cell)
+        # over the primary cel — the temporary cell is the actual current location.
+        tijdcel = record.get("tijdelijke_cel")
+        correct_cel = tijdcel if tijdcel is not None else record["cel"]
         display_naam = record["naam"]
         display_voor = record["voornaam"]
 
