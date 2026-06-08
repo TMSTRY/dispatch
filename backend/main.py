@@ -142,7 +142,11 @@ async def upload_dispatch(session_id: str, file: UploadFile = File(...)):
     raw = await file.read()
     source_name = file.filename or "dispatch"
     try:
-        rows = parse_dispatch(raw, source_name=source_name)
+        if source_name.lower().endswith(".pdf"):
+            from parsers.bezoek_pdf import parse_bezoek_pdf
+            rows = parse_bezoek_pdf(raw, source_name=source_name)
+        else:
+            rows = parse_dispatch(raw, source_name=source_name)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Fout bij verwerking dispatch-bestand: {e}")
     session["dispatch_files"].append({"filename": source_name, "rows": rows})

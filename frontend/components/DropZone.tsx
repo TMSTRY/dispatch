@@ -25,8 +25,9 @@ export default function DropZone({
     e.preventDefault();
     setDragging(false);
     if (disabled) return;
-    const files = Array.from(e.dataTransfer.files).filter(
-      (f) => f.name.endsWith(".xlsx") || f.name.endsWith(".xls")
+    const allowed = accept.split(",").map((s) => s.trim().toLowerCase());
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      allowed.some((ext) => f.name.toLowerCase().endsWith(ext))
     );
     if (files.length) onFiles(files);
   }
@@ -91,7 +92,9 @@ export default function DropZone({
 
       <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
       <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-        {uploading ? "Bezig met uploaden…" : "Sleep of klik · .xlsx / .xls"}
+        {uploading
+          ? "Bezig met uploaden…"
+          : `Sleep of klik · ${accept.split(",").map((s) => s.trim()).join(" / ")}`}
       </p>
     </div>
   );

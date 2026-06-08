@@ -290,7 +290,7 @@ export default function Home() {
             {/* Step 4 — Bezoek */}
             <Card step="4" title="Gereserveerde bezoeken"
               badge={dispatchFiles.filter(f => f.category === "bezoek").length}>
-              <DropZone label="Upload bezoekbestand (.xlsx)" multiple
+              <DropZone label="Upload bezoekbestand (.xlsx / .pdf)" multiple accept=".xlsx,.xls,.pdf"
                 onFiles={(f) => handleDispatch(f, "bezoek")} uploading={loading} disabled={loading || !celFile} />
               <FileList files={dispatchFiles.filter(f => f.category === "bezoek")} onRemove={handleRemoveDispatch} />
             </Card>
