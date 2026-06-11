@@ -87,7 +87,7 @@ export default function MutatiesPage() {
       {/* Hero */}
       <div className="relative overflow-hidden" style={{ minHeight: "220px" }}>
         <img
-          src="/gevangenis.jpg"
+          src="/hero-aerial.PNG"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ filter: "brightness(0.35)" }}
