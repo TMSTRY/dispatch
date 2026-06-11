@@ -85,16 +85,16 @@ export default function MutatiesPage() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-[#080C14] pt-16">
       {/* Hero */}
-      <div className="relative overflow-hidden" style={{ minHeight: "220px" }}>
+      <div className="relative" style={{ height: "52vh", minHeight: "360px" }}>
         <img
           src="/hero-aerial.PNG"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ filter: "brightness(0.35)" }}
+          style={{ filter: "brightness(0.4)" }}
         />
         <div className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, #080C14 0%, #080C14 38%, transparent 85%)" }} />
-        <div className="relative z-10 px-6 pt-12 pb-8 max-w-2xl mx-auto">
+          style={{ background: "linear-gradient(to top, #080C14 0%, #080C14 30%, transparent 80%)" }} />
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-10 max-w-2xl mx-auto">
           <p className="text-xs font-semibold tracking-widest uppercase text-slate-400 mb-2">Intern systeem</p>
           <h1 className="text-3xl font-bold text-white">Mutatielijst invullen</h1>
           <p className="mt-2 text-sm text-slate-400">
@@ -104,7 +104,7 @@ export default function MutatiesPage() {
       </div>
 
       {/* Cards */}
-      <div className="max-w-2xl mx-auto px-4 -mt-4 pb-20 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 -mt-2 pb-20 space-y-4">
 
         {/* Step 1 */}
         <div className="glass rounded-2xl p-5">
