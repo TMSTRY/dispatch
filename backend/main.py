@@ -300,6 +300,32 @@ async def generate(session_id: str, request: GenerateRequest):
     )
 
 
+@app.post("/mutaties/generate")
+async def generate_mutaties(
+    template: UploadFile = File(...),
+    source: UploadFile = File(...),
+):
+    """
+    Fill a mutatielijst template with data from a dienstroooster (next-day roster).
+    Returns a job_id for download via /download/{job_id}.
+    """
+    template_bytes = await template.read()
+    source_bytes   = await source.read()
+    try:
+        from parsers.mutaties_source import parse_mutaties_source
+        from mutaties_writer import fill_mutaties_template
+        roster       = parse_mutaties_source(source_bytes, filename=source.filename or "")
+        filled_bytes = fill_mutaties_template(template_bytes, roster)
+    except Exception as e:
+        log.exception("Fout bij verwerking mutatielijst")
+        raise HTTPException(status_code=422, detail=f"Fout bij verwerking mutatielijst: {e}")
+
+    job_id   = str(uuid.uuid4())
+    filename = template.filename or "mutatielijst.xlsx"
+    _jobs[job_id] = {"bytes": filled_bytes, "filename": filename}
+    return {"job_id": job_id, "filename": filename}
+
+
 @app.get("/download/{job_id}")
 def download(job_id: str):
     from urllib.parse import quote

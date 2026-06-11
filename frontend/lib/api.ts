@@ -86,3 +86,15 @@ export async function generate(
 export function downloadUrl(jobId: string): string {
   return `${BASE}/download/${jobId}`;
 }
+
+export async function generateMutaties(templateFile: File, sourceFile: File) {
+  const fd = new FormData();
+  fd.append("template", templateFile);
+  fd.append("source", sourceFile);
+  const res = await fetch(`${BASE}/mutaties/generate`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Genereren mutatielijst mislukt");
+  }
+  return res.json() as Promise<{ job_id: string; filename: string }>;
+}

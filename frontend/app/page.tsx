@@ -174,7 +174,7 @@ export default function Home() {
   // ── Results page ─────────────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] pt-10">
         <div className="relative">
           {/* Hero image */}
           <div className="relative overflow-hidden" style={{ height: "82vh", minHeight: "520px" }}>
@@ -217,7 +217,7 @@ export default function Home() {
 
   // ── Upload page ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] pt-10">
       <div className="relative">
         {/* Hero image */}
         <div className="relative overflow-hidden" style={{ height: "68vh", minHeight: "440px" }}>
