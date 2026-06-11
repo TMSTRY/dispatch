@@ -5,6 +5,20 @@ from openpyxl import load_workbook
 from rapidfuzz import process, fuzz
 from parsers.mutaties_source import norm_pos, _ABBREV_MAP
 
+
+def _short_name(name: str) -> str:
+    """Format 'LASTNAME Firstname' → 'LASTNAME F' (no period)."""
+    tokens = name.strip().split()
+    if len(tokens) <= 1:
+        return name
+    # Find the first token that is NOT all-caps → that's the first name
+    for i, token in enumerate(tokens):
+        if not token.isupper():
+            lastname = " ".join(tokens[:i])
+            initial = token[0].upper()
+            return f"{lastname} {initial}" if lastname else initial
+    return name  # all tokens uppercase → no first name found
+
 # ── Nacht role detection ──────────────────────────────────────────────────────
 # These patterns identify nacht role labels in the template's col H.
 # They are distinct from other col H content (WANDELING, globe, rondeweg, etc.)
@@ -99,16 +113,16 @@ def fill_mutaties_template(template_bytes: bytes, roster: dict) -> bytes:
                 dag   = data.get("dag",   [])
                 laat  = data.get("laat",  [])
 
-                if pi < len(vroeg): row[1].value = vroeg[pi]   # col B
-                if pi < len(dag):   row[3].value = dag[pi]     # col D
-                if pi < len(laat):  row[5].value = laat[pi]    # col F
+                if pi < len(vroeg): row[1].value = _short_name(vroeg[pi])   # col B
+                if pi < len(dag):   row[3].value = _short_name(dag[pi])     # col D
+                if pi < len(laat):  row[5].value = _short_name(laat[pi])    # col F
 
         # ── Right section: nacht ──────────────────────────────────────────────
         # User confirmed: label on row N, person name goes in col H of row N+1.
         if pending_nacht_label is not None:
             mk = _match_nacht(pending_nacht_label, nacht_keys)
             if mk and nacht.get(mk):
-                row[7].value = nacht[mk]
+                row[7].value = _short_name(nacht[mk])
             pending_nacht_label = None
 
         # Queue this row's nacht label for the next iteration
