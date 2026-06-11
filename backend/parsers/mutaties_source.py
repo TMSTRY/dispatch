@@ -130,6 +130,7 @@ def parse_mutaties_source(file_bytes: bytes, filename: str = "") -> dict:
             return str(row[cidx]).strip() if cidx < len(row) and row[cidx] is not None else ""
 
         nacht_done = False
+        last_pk: str | None = None
 
         for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
             if row is None:
@@ -139,12 +140,23 @@ def parse_mutaties_source(file_bytes: bytes, filename: str = "") -> dict:
             dienst = _cell(row, col_dienst)
             if dienst:
                 pk = norm_pos(dienst)
+                last_pk = pk
+                # Always register the position (even unstaffed), so exact-name
+                # matches in the template beat fuzzy matches to similar positions.
+                if pk not in result["shifts"]:
+                    result["shifts"][pk] = {"vroeg": [], "dag": [], "laat": []}
+            elif last_pk:
+                # Continuation row: col A is blank but staff data may still be
+                # present (dienstroooster uses blank rows for 2nd/3rd person).
+                pk = last_pk
+            else:
+                pk = None
+
+            if pk:
                 vroeg = strip_name_prefix(_cell(row, col_vroeg)) or None
                 dag   = strip_name_prefix(_cell(row, col_dag))   or None
                 laat  = strip_name_prefix(_cell(row, col_laat))  or None
 
-                if pk not in result["shifts"]:
-                    result["shifts"][pk] = {"vroeg": [], "dag": [], "laat": []}
                 if vroeg: result["shifts"][pk]["vroeg"].append(vroeg)
                 if dag:   result["shifts"][pk]["dag"].append(dag)
                 if laat:  result["shifts"][pk]["laat"].append(laat)

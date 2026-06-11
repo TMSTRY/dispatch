@@ -85,8 +85,11 @@ def fill_mutaties_template(template_bytes: bytes, roster: dict) -> bytes:
     pos_keys  = list(shifts.keys())
     nacht_keys = list(nacht.keys())
 
-    last_pos_norm: str | None = None
-    pos_row_count = 0
+    # Track how many persons have already been written for each source key.
+    # This allows multiple template rows that map to the same source position
+    # (e.g. "PBA Keuken 1/2/3" all matching source "PBA Keuken") to pick up
+    # person 0, 1, 2 in order rather than all repeating person 0.
+    used_persons: dict[str, int] = {}
     pending_nacht_label: str | None = None   # nacht label seen on the previous row
 
     for row in ws.iter_rows(min_row=3, values_only=False):
@@ -96,18 +99,10 @@ def fill_mutaties_template(template_bytes: bytes, roster: dict) -> bytes:
         # ── Left section: vroeg / dag / laat ─────────────────────────────────
         if col_a is not None and str(col_a).strip():
             pos_label = str(col_a).strip()
-            pos_norm  = norm_pos(pos_label)
-
-            if pos_norm == last_pos_norm:
-                pos_row_count += 1     # second row for same position → person 2
-            else:
-                last_pos_norm  = pos_norm
-                pos_row_count  = 1     # first row for this position → person 1
-
             matched = _match_pos(pos_label, pos_keys)
             if matched:
                 data = shifts[matched]
-                pi   = pos_row_count - 1   # 0 = first person, 1 = second
+                pi   = used_persons.get(matched, 0)
 
                 vroeg = data.get("vroeg", [])
                 dag   = data.get("dag",   [])
@@ -116,6 +111,8 @@ def fill_mutaties_template(template_bytes: bytes, roster: dict) -> bytes:
                 if pi < len(vroeg): row[1].value = _short_name(vroeg[pi])   # col B
                 if pi < len(dag):   row[3].value = _short_name(dag[pi])     # col D
                 if pi < len(laat):  row[5].value = _short_name(laat[pi])    # col F
+
+                used_persons[matched] = pi + 1
 
         # ── Right section: nacht ──────────────────────────────────────────────
         # User confirmed: label on row N, person name goes in col H of row N+1.
