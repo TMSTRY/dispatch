@@ -39,10 +39,13 @@ def _is_nacht_label(s: str) -> bool:
 # ── Matching helpers ──────────────────────────────────────────────────────────
 
 def _match_pos(label: str, keys: list[str]) -> str | None:
-    """Fuzzy-match a template position label to a source position key."""
+    """Match a template position label to a source position key.
+    Exact match always wins to prevent 'PBA Hulp 1' stealing from 'PBA Dag Hulp 1'."""
     norm = norm_pos(label)
     if not keys:
         return None
+    if norm in keys:
+        return norm
     r = process.extractOne(norm, keys, scorer=fuzz.token_set_ratio, score_cutoff=70)
     return r[0] if r else None
 
