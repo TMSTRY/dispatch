@@ -29,8 +29,8 @@ def strip_name_prefix(name: str) -> str:
         if len(first) > 1 and first[1].isupper():
             return first[1:] + rest
 
-    # 1-char uppercase S/O prefix, only when remaining surname ≥ 4 chars
-    if first[0] in ("S", "O") and len(first) > 4 and first[1].isupper():
+    # 1-char uppercase S/O prefix, only when remaining surname ≥ 2 chars
+    if first[0] in ("S", "O") and len(first) >= 3 and first[1].isupper():
         return first[1:] + rest
 
     return name
