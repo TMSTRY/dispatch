@@ -348,9 +348,7 @@ async def update_werkerslijst(
         log.exception("Fout bij verwerking werkerslijst")
         raise HTTPException(status_code=422, detail=f"Fout bij verwerking werkerslijst: {e}")
 
-    from datetime import date as _date
-    today    = _date.today().strftime("%d-%m-%Y")
-    filename = f"Werkers_{today}.xlsx"
+    filename = "Werkers1.xlsx"
     job_id   = str(uuid.uuid4())
     _jobs[job_id] = {"bytes": updated_bytes, "filename": filename}
     return {"job_id": job_id, "filename": filename, "summary": summary}
