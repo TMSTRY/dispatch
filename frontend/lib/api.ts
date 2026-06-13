@@ -87,6 +87,26 @@ export function downloadUrl(jobId: string): string {
   return `${BASE}/download/${jobId}`;
 }
 
+export interface WerkersSummary {
+  removed: Array<{ naam: string; cel: string | number }>;
+  updated: Array<{ naam: string; van: string | number; naar: string | number }>;
+}
+
+export async function updateWerkers(
+  mutatiesFile: File,
+  werkersFile: File,
+): Promise<{ job_id: string; filename: string; summary: WerkersSummary }> {
+  const fd = new FormData();
+  fd.append("mutatielijst", mutatiesFile);
+  fd.append("werkerslijst", werkersFile);
+  const res = await fetch(`${BASE}/werkers/update`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? "Werkerslijst update mislukt");
+  }
+  return res.json();
+}
+
 export async function generateMutaties(templateFile: File, sourceFile: File) {
   const fd = new FormData();
   fd.append("template", templateFile);

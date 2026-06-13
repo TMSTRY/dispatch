@@ -326,6 +326,36 @@ async def generate_mutaties(
     return {"job_id": job_id, "filename": filename}
 
 
+@app.post("/werkers/update")
+async def update_werkerslijst(
+    mutatielijst: UploadFile = File(...),
+    werkerslijst: UploadFile = File(...),
+):
+    """
+    Apply MUTATIES sheet from a filled mutatielijst to an existing werkerslijst.
+    Removes UITGAANDEN (except PV), updates cell numbers (MUTATIE VAN→NAAR),
+    sorts by cell number, and repopulates section sheets.
+    Returns job_id + summary of changes.
+    """
+    mut_bytes  = await mutatielijst.read()
+    werk_bytes = await werkerslijst.read()
+    try:
+        from parsers.werkers_mutaties import parse_werkers_mutaties
+        from werkers_writer import update_werkers
+        mutaties      = parse_werkers_mutaties(mut_bytes)
+        updated_bytes, summary = update_werkers(werk_bytes, mutaties)
+    except Exception as e:
+        log.exception("Fout bij verwerking werkerslijst")
+        raise HTTPException(status_code=422, detail=f"Fout bij verwerking werkerslijst: {e}")
+
+    from datetime import date as _date
+    today    = _date.today().strftime("%d-%m-%Y")
+    filename = f"Werkers_{today}.xlsx"
+    job_id   = str(uuid.uuid4())
+    _jobs[job_id] = {"bytes": updated_bytes, "filename": filename}
+    return {"job_id": job_id, "filename": filename, "summary": summary}
+
+
 @app.get("/download/{job_id}")
 def download(job_id: str):
     from urllib.parse import quote

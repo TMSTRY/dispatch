@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/",         label: "Dispatchlijst" },
   { href: "/mutaties", label: "Mutatielijst"  },
+  { href: "/werkers",  label: "Werkerslijst"  },
 ];
 
 export default function Nav() {
