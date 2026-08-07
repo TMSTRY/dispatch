@@ -143,8 +143,13 @@ async def upload_dispatch(session_id: str, file: UploadFile = File(...)):
     source_name = file.filename or "dispatch"
     try:
         if source_name.lower().endswith(".pdf"):
+            # Bezoek-PDF (DG EPI) heeft voorrang; andere PDF's (meditatie,
+            # eredienst, lessen, …) gaan naar de generieke activiteitenparser.
             from parsers.bezoek_pdf import parse_bezoek_pdf
+            from parsers.activiteit_pdf import parse_activiteit_pdf
             rows = parse_bezoek_pdf(raw, source_name=source_name)
+            if not rows:
+                rows = parse_activiteit_pdf(raw, source_name=source_name)
         else:
             rows = parse_dispatch(raw, source_name=source_name)
     except Exception as e:
