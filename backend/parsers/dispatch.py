@@ -118,6 +118,37 @@ def _detect_keuken_cols(col_map: dict) -> tuple[int | None, int | None]:
     return idx_wd, idx_we
 
 
+# ── Deelnemerslijst metadata block ────────────────────────────────────────────
+# The "Deelnemerslijst" format (zaterdagviering, andere activiteiten) heeft geen
+# uur- of bestemmingskolom. Die staan als label/waarde-paren in een blok boven de
+# header:  "Lokaal" | … | "Kapel"      "Uur" | … | "18:30 - 19:30"
+# We scannen dat blok en gebruiken de waarden als fallback voor alle rijen.
+
+def _scan_deelnemers_meta(ws, header_row_idx: int) -> tuple[time | None, str]:
+    """Return (uur, bestemming) from the label/value block above the header."""
+    meta_uur: time | None = None
+    meta_best = ""
+
+    for row in ws.iter_rows(min_row=1, max_row=max(header_row_idx - 1, 1), values_only=True):
+        for j, cell in enumerate(row):
+            label = str(cell).strip().lower().rstrip(":") if cell is not None else ""
+            if label not in ("uur", "lokaal"):
+                continue
+            # Take the first non-empty cell to the right of the label
+            value = next(
+                (str(v).strip() for v in row[j + 1:] if v is not None and str(v).strip()),
+                "",
+            )
+            if not value:
+                continue
+            if label == "uur" and meta_uur is None:
+                meta_uur = _to_time(value)
+            elif label == "lokaal" and not meta_best:
+                meta_best = value
+
+    return meta_uur, meta_best
+
+
 # Sources where a missing uur means the row is useless and must be dropped.
 _UUR_REQUIRED_KEYWORDS = ("keuken", "magazijn", "kleedkamer")
 
@@ -142,10 +173,17 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
         #   1. Regular dispatch: row contains "naam" AND "bestemming"
         #   2. Agenda/hoorzitting: row contains "rad" AND a cell containing "naam"
         #   3. Bezoek: row contains "shift" AND "type bezoek" (AND "naam")
+        #   4. Deelnemerslijst: row contains "nr" AND "cel" AND "naam", geen
+        #      bestemmingskolom — uur/lokaal staan in een metablok erboven
         header_row_idx = None
         col_map = {}
         is_agenda = False
         is_bezoek = False
+        is_deelnemers = False
+        # Deelnemerslijst is de zwakste match (geen bestemmingskolom). We onthouden
+        # hem maar blijven doorzoeken: een echte dispatch-header verderop wint.
+        deelnemers_hit: tuple[int, tuple] | None = None
+
         for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True), 1):
             row_lower = [str(c).strip().lower() if c is not None else "" for c in row]
             is_regular = "naam" in row_lower and (
@@ -157,16 +195,28 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 header_row_idx = i
                 is_bezoek = is_bezoek_hdr and not is_regular
                 is_agenda = is_agenda_hdr and not is_regular and not is_bezoek
-                for j, val in enumerate(row):
-                    lv = str(val).strip().lower() if val is not None else ""
-                    if lv:
-                        col_map[lv] = j
-                if "uur" not in col_map:
-                    col_map["uur"] = 0
-                # "plaats" is an alias for "bestemming" (used in zorg files)
-                if "plaats" in col_map and "bestemming" not in col_map:
-                    col_map["bestemming"] = col_map["plaats"]
                 break
+            if deelnemers_hit is None and (
+                "naam" in row_lower
+                and "cel" in row_lower
+                and any(v in ("nr", "nr.") for v in row_lower)
+            ):
+                deelnemers_hit = (i, row)
+
+        if header_row_idx is None and deelnemers_hit is not None:
+            header_row_idx, row = deelnemers_hit
+            is_deelnemers = True
+
+        if header_row_idx is not None:
+            for j, val in enumerate(row):
+                lv = str(val).strip().lower() if val is not None else ""
+                if lv:
+                    col_map[lv] = j
+            if "uur" not in col_map:
+                col_map["uur"] = 0
+            # "plaats" is an alias for "bestemming" (used in zorg files)
+            if "plaats" in col_map and "bestemming" not in col_map:
+                col_map["bestemming"] = col_map["plaats"]
 
         # Headerless fallback (format 4): no known header found, but rows have
         # the fixed structure  uur | celnr | naam | voornaam | bestemming
@@ -226,6 +276,17 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
             fallback_best = "Hoorzitting"
             fallback_uur  = time(10, 0)
             idx_best = None  # no bestemming column in agenda files — always use fallback
+
+        # Deelnemerslijst: uur en lokaal komen uit het metablok boven de header.
+        # Er is geen uur- of bestemmingskolom in de tabel zelf.
+        if is_deelnemers:
+            meta_uur, meta_best = _scan_deelnemers_meta(ws, header_row_idx)
+            if meta_uur is not None:
+                fallback_uur = meta_uur
+            if meta_best:
+                fallback_best = meta_best
+            idx_uur  = None
+            idx_best = None
 
         # Columns to exclude from skip-status scan (avoid false matches on names)
         _name_cols = {idx_naam, idx_voor}
@@ -303,7 +364,9 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                     "source":    source_name,
                 })
             else:
-                uur_val = _to_time(row[idx_uur] if len(row) > idx_uur else None)
+                uur_val = _to_time(
+                    row[idx_uur] if (idx_uur is not None and len(row) > idx_uur) else None
+                )
 
                 # Apply filename-based fallbacks for missing uur / bestemming
                 if uur_val is None and fallback_uur is not None:
