@@ -149,6 +149,11 @@ def _scan_deelnemers_meta(ws, header_row_idx: int) -> tuple[time | None, str]:
     return meta_uur, meta_best
 
 
+# Statussen in de "opgeroepen"-kolom die betekenen dat de gedetineerde niet
+# beschikbaar is. Wordt vergeleken met de volledige celwaarde (exact), zodat
+# een bestemming als "ziekenhuis" of "ziekenboeg" niet per ongeluk wegvalt.
+_SKIP_STATUSES = {"rust", "atv", "ziek", "ziekte"}
+
 # Sources where a missing uur means the row is useless and must be dropped.
 _UUR_REQUIRED_KEYWORDS = ("keuken", "magazijn", "kleedkamer")
 
@@ -322,10 +327,11 @@ def parse_dispatch(file_bytes: bytes, source_name: str = "dispatch") -> list[dic
                 if "bvm" in row_text or "ibvr" in row_text:
                     continue
 
-            # Skip rows marked as "rust" or "atv" in any non-name column.
+            # Skip rows marked as "rust", "atv" of "ziek" in any non-name column.
             # Keuken and magazijn files mark unavailable detainees this way.
+            # Exacte celwaarde, dus "ziekenhuis" of "ziekenboeg" blijven behouden.
             if any(
-                str(row[i]).strip().lower() in {"rust", "atv"}
+                str(row[i]).strip().lower() in _SKIP_STATUSES
                 for i in range(len(row))
                 if i not in _name_cols and row[i] is not None
             ):
