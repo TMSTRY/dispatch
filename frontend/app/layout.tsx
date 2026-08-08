@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ThemeToggle from "@/components/ThemeToggle";
-import Nav from "@/components/Nav";
+import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,9 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-[var(--font-inter)]">
-        <Nav />
         <ThemeToggle />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

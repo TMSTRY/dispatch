@@ -1,6 +1,5 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import AuthGate from "@/components/AuthGate";
 import { VERSION } from "@/lib/version";
 import { fireConfetti } from "@/lib/confetti";
 import DropZone from "@/components/DropZone";
@@ -31,7 +30,6 @@ const LOADING_MESSAGES = [
 ];
 
 export default function Home() {
-  const [authed, setAuthed] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const [celFile, setCelFile] = useState<string | null>(null);
@@ -79,12 +77,6 @@ export default function Home() {
     setSessionId(id);
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("dispatch_auth") === "1") {
-      setAuthed(true);
-    }
-  }, []);
-
   // Backend wekken. Slaapt de Render-instantie, dan duurt het eerste verzoek
   // makkelijk 50s; we blijven proberen en tonen de voortgang in plaats van
   // meteen een fout te geven (voorheen moest je zelf blijven verversen).
@@ -98,9 +90,11 @@ export default function Home() {
       .finally(() => setWaking(false));
   }, [applySessionId]);
 
+  // Deze pagina rendert alleen na authenticatie (zie AuthProvider), dus we
+  // kunnen meteen een sessie opstarten.
   useEffect(() => {
-    if (authed && !sessionId && !waking && !error) startSession();
-  }, [authed, sessionId, waking, error, startSession]);
+    if (!sessionId && !waking && !error) startSession();
+  }, [sessionId, waking, error, startSession]);
 
   // Secondeteller tijdens het wekken
   useEffect(() => {
@@ -300,10 +294,6 @@ export default function Home() {
   const datum = beschrijfDatum(targetDate);
   const totaalRijen = dispatchFiles.reduce((n, f) => n + f.rows, 0);
   const manueleRijen = manualRows.filter((r) => r.naam.trim()).length;
-
-  if (!authed) {
-    return <AuthGate onAuth={() => setAuthed(true)} />;
-  }
 
   // ── Results page ─────────────────────────────────────────────────────────────
   if (result) {
