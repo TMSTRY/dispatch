@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AuthGate from "@/components/AuthGate";
 import { VERSION } from "@/lib/version";
 import { fireConfetti } from "@/lib/confetti";
@@ -7,7 +7,7 @@ import DropZone from "@/components/DropZone";
 import ManualEntryTable from "@/components/ManualEntryTable";
 import ResultsPreview from "@/components/ResultsPreview";
 import {
-  createSession,
+  createSessionWithRetry,
   uploadCelbezetting,
   uploadDispatch,
   removeDispatch,
@@ -47,6 +47,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [waking, setWaking] = useState(false);
+  const [wakeSeconds, setWakeSeconds] = useState(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -55,11 +57,29 @@ export default function Home() {
     }
   }, []);
 
+  // Backend wekken. Slaapt de Render-instantie, dan duurt het eerste verzoek
+  // makkelijk 50s; we blijven proberen en tonen de voortgang in plaats van
+  // meteen een fout te geven (voorheen moest je zelf blijven verversen).
+  const startSession = useCallback(() => {
+    setWaking(true);
+    setWakeSeconds(0);
+    setError(null);
+    createSessionWithRetry()
+      .then((id) => { setSessionId(id); setError(null); })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Sessie aanmaken mislukt"))
+      .finally(() => setWaking(false));
+  }, []);
+
   useEffect(() => {
-    if (authed && !sessionId) {
-      createSession().then(setSessionId).catch(() => setError("Sessie aanmaken mislukt"));
-    }
-  }, [authed, sessionId]);
+    if (authed && !sessionId && !waking && !error) startSession();
+  }, [authed, sessionId, waking, error, startSession]);
+
+  // Secondeteller tijdens het wekken
+  useEffect(() => {
+    if (!waking) return;
+    const t = setInterval(() => setWakeSeconds((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [waking]);
 
   async function handleCelbezetting(files: File[]) {
     if (!sessionId) return;
@@ -164,7 +184,7 @@ export default function Home() {
     setManualRows([]);
     setResult(null);
     setError(null);
-    createSession().then(setSessionId);
+    startSession();
   }
 
   if (!authed) {
@@ -248,12 +268,46 @@ export default function Home() {
         <div className="relative -mt-36 px-4 pb-6">
           <div className="max-w-4xl mx-auto space-y-4">
 
+            {/* Wek-banner — de gratis Render-instantie slaapt na inactiviteit */}
+            {waking && (
+              <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-100 dark:border-amber-400/20 rounded-xl px-5 py-3.5">
+                <svg className="w-5 h-5 spin flex-shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" d="M12 3a9 9 0 1 0 9 9" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    Server wordt gewekt… {wakeSeconds}s
+                  </p>
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                    De backend slaapt na inactiviteit en heeft ongeveer een minuut nodig. Even wachten volstaat — verversen is niet nodig.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Sessie klaar — korte bevestiging tot de eerste upload */}
+            {!waking && sessionId && !celFile && wakeSeconds > 3 && (
+              <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-500/[0.08] border border-emerald-100 dark:border-emerald-400/20 rounded-xl px-5 py-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-400/20 flex items-center justify-center text-emerald-500 text-xs font-bold flex-shrink-0">✓</span>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300 flex-1">
+                  Server is wakker — je kan beginnen.
+                </span>
+              </div>
+            )}
+
             {/* Error banner */}
-            {error && (
+            {error && !waking && (
               <div className="flex items-center gap-3 bg-red-50 dark:bg-red-500/[0.08] border border-red-100 dark:border-red-400/20 rounded-xl px-5 py-3.5">
                 <span className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-400/20 flex items-center justify-center text-red-500 text-xs font-bold flex-shrink-0">!</span>
                 <span className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</span>
-                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-lg leading-none transition">×</button>
+                {!sessionId ? (
+                  <button onClick={startSession}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-400/20 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-400/30 transition flex-shrink-0">
+                    Opnieuw proberen
+                  </button>
+                ) : (
+                  <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-lg leading-none transition">×</button>
+                )}
               </div>
             )}
 
@@ -267,7 +321,7 @@ export default function Home() {
                 />
               ) : (
                 <DropZone label="Upload celbezetting (.xlsx)" onFiles={handleCelbezetting}
-                  uploading={loading} disabled={loading} />
+                  uploading={loading} disabled={loading || !sessionId} />
               )}
             </Card>
 

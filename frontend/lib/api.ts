@@ -1,10 +1,56 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export async function createSession(): Promise<string> {
-  const res = await fetch(`${BASE}/session`, { method: "POST" });
+export async function createSession(signal?: AbortSignal): Promise<string> {
+  const res = await fetch(`${BASE}/session`, { method: "POST", signal });
   if (!res.ok) throw new Error("Sessie aanmaken mislukt");
   const data = await res.json();
   return data.session_id as string;
+}
+
+/**
+ * De backend draait op Render's gratis tier en valt na inactiviteit in slaap.
+ * Het eerste verzoek wekt hem, maar dat duurt makkelijk 50 seconden en faalt
+ * of blijft hangen zolang hij nog niet klaar is. Daarom proberen we het hier
+ * herhaaldelijk in plaats van meteen op te geven — dat scheelde voorheen
+ * handmatig verversen tot het toevallig lukte.
+ */
+export async function createSessionWithRetry(opts: {
+  totalTimeoutMs?: number;
+  attemptTimeoutMs?: number;
+  pauseMs?: number;
+  onAttempt?: (attempt: number) => void;
+} = {}): Promise<string> {
+  const totalTimeoutMs   = opts.totalTimeoutMs   ?? 120_000;
+  const attemptTimeoutMs = opts.attemptTimeoutMs ?? 20_000;
+  const pauseMs          = opts.pauseMs          ?? 2_000;
+
+  const deadline = Date.now() + totalTimeoutMs;
+  let attempt = 0;
+  let lastError: unknown;
+
+  while (Date.now() < deadline) {
+    attempt += 1;
+    opts.onAttempt?.(attempt);
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), attemptTimeoutMs);
+    try {
+      return await createSession(ctrl.signal);
+    } catch (e) {
+      lastError = e;
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (Date.now() + pauseMs >= deadline) break;
+    await new Promise((r) => setTimeout(r, pauseMs));
+  }
+
+  throw new Error(
+    lastError instanceof Error && lastError.name !== "AbortError"
+      ? `Server niet bereikbaar: ${lastError.message}`
+      : "Server reageert niet. Probeer opnieuw — de backend heeft soms een minuut nodig om op te starten.",
+  );
 }
 
 export async function uploadCelbezetting(sessionId: string, file: File) {
