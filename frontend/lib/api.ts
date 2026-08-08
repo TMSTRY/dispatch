@@ -1,5 +1,28 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+/**
+ * De backend houdt sessies alleen in het geheugen. Slaapt of herstart de
+ * Render-instantie tussendoor, dan is de sessie weg en antwoordt elke
+ * vervolgstap met 404 "Sessie niet gevonden". We geven dat een eigen type
+ * zodat de pagina het stil kan herstellen in plaats van de gebruiker met
+ * een foutmelding en verloren uploads achter te laten.
+ */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("Sessie verlopen");
+    this.name = "SessionExpiredError";
+  }
+}
+
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  const body = await res.json().catch(() => ({}));
+  const detail = (body as { detail?: string }).detail;
+  if (res.status === 404 && typeof detail === "string" && detail.toLowerCase().includes("sessie")) {
+    throw new SessionExpiredError();
+  }
+  throw new Error(detail ?? fallback);
+}
+
 export async function createSession(signal?: AbortSignal): Promise<string> {
   const res = await fetch(`${BASE}/session`, { method: "POST", signal });
   if (!res.ok) throw new Error("Sessie aanmaken mislukt");
@@ -60,10 +83,7 @@ export async function uploadCelbezetting(sessionId: string, file: File) {
     method: "POST",
     body: fd,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail ?? "Upload celbezetting mislukt");
-  }
+  if (!res.ok) await throwApiError(res, "Upload celbezetting mislukt");
   return res.json();
 }
 
@@ -74,10 +94,7 @@ export async function uploadDispatch(sessionId: string, file: File) {
     method: "POST",
     body: fd,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail ?? "Upload dispatch mislukt");
-  }
+  if (!res.ok) await throwApiError(res, "Upload dispatch mislukt");
   return res.json();
 }
 
@@ -85,7 +102,7 @@ export async function removeDispatch(sessionId: string, index: number) {
   const res = await fetch(`${BASE}/session/${sessionId}/dispatch/${index}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw new Error("Verwijderen mislukt");
+  if (!res.ok) await throwApiError(res, "Verwijderen mislukt");
   return res.json();
 }
 
@@ -96,10 +113,7 @@ export async function uploadPaleislijst(sessionId: string, file: File) {
     method: "POST",
     body: fd,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail ?? "Upload paleislijst mislukt");
-  }
+  if (!res.ok) await throwApiError(res, "Upload paleislijst mislukt");
   return res.json();
 }
 
@@ -122,10 +136,7 @@ export async function generate(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ manual_entries: manualEntries, target_date: targetDate }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail ?? "Genereren mislukt");
-  }
+  if (!res.ok) await throwApiError(res, "Genereren mislukt");
   return res.json();
 }
 

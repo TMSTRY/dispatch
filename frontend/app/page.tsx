@@ -7,6 +7,7 @@ import DropZone from "@/components/DropZone";
 import ManualEntryTable from "@/components/ManualEntryTable";
 import ResultsPreview from "@/components/ResultsPreview";
 import {
+  SessionExpiredError,
   createSessionWithRetry,
   uploadCelbezetting,
   uploadDispatch,
@@ -49,7 +50,28 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [waking, setWaking] = useState(false);
   const [wakeSeconds, setWakeSeconds] = useState(0);
+  const [recovering, setRecovering] = useState(false);
+  const [recovered, setRecovered] = useState(false);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // De backend bewaart sessies alleen in het geheugen. Slaapt of herstart
+  // Render tussendoor, dan is alles wat al geüpload was verdwenen. We houden
+  // de bestanden daarom hier bij, zodat we ze bij verlies stil opnieuw kunnen
+  // versturen zonder dat de gebruiker werk kwijt is.
+  const uploadedRef = useRef<{
+    cel: File | null;
+    dispatch: { file: File; category: "dispatch" | "agenda" | "bezoek" }[];
+    paleis: File | null;
+  }>({ cel: null, dispatch: [], paleis: null });
+
+  // Spiegelt sessionId, maar dan synchroon. Nodig omdat een herstel midden in
+  // een reeks uploads anders niet zichtbaar is in de closure van de lopende
+  // functie — elk volgend bestand zou dan opnieuw een herstel uitlokken.
+  const sessionIdRef = useRef<string | null>(null);
+  const applySessionId = useCallback((id: string | null) => {
+    sessionIdRef.current = id;
+    setSessionId(id);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem("dispatch_auth") === "1") {
@@ -65,10 +87,10 @@ export default function Home() {
     setWakeSeconds(0);
     setError(null);
     createSessionWithRetry()
-      .then((id) => { setSessionId(id); setError(null); })
+      .then((id) => { applySessionId(id); setError(null); })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Sessie aanmaken mislukt"))
       .finally(() => setWaking(false));
-  }, []);
+  }, [applySessionId]);
 
   useEffect(() => {
     if (authed && !sessionId && !waking && !error) startSession();
@@ -81,12 +103,57 @@ export default function Home() {
     return () => clearInterval(t);
   }, [waking]);
 
+  /**
+   * Bouwt een verloren sessie opnieuw op: nieuwe sessie aanvragen en alle
+   * eerder geüploade bestanden in dezelfde volgorde terugsturen, zodat de
+   * indexen van de dispatch-bestanden blijven kloppen.
+   */
+  const recoverSession = useCallback(async (): Promise<string> => {
+    setRecovering(true);
+    try {
+      const id = await createSessionWithRetry();
+      const snap = uploadedRef.current;
+      if (snap.cel) await uploadCelbezetting(id, snap.cel);
+      for (const d of snap.dispatch) await uploadDispatch(id, d.file);
+      if (snap.paleis) await uploadPaleislijst(id, snap.paleis);
+      applySessionId(id);
+      setRecovered(true);
+      setTimeout(() => setRecovered(false), 6000);
+      return id;
+    } finally {
+      setRecovering(false);
+    }
+  }, [applySessionId]);
+
+  /**
+   * Voert een actie uit tegen de huidige sessie. Blijkt die verlopen, dan
+   * wordt ze eerst hersteld en daarna de actie opnieuw geprobeerd — de
+   * gebruiker merkt er alleen een korte melding van.
+   */
+  const withSession = useCallback(
+    async <T,>(fn: (sid: string) => Promise<T>): Promise<T> => {
+      const sid = sessionIdRef.current;
+      if (!sid) throw new Error("Nog geen verbinding met de server.");
+      try {
+        return await fn(sid);
+      } catch (e) {
+        if (e instanceof SessionExpiredError) {
+          const freshId = await recoverSession();
+          return await fn(freshId);
+        }
+        throw e;
+      }
+    },
+    [recoverSession],
+  );
+
   async function handleCelbezetting(files: File[]) {
     if (!sessionId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await uploadCelbezetting(sessionId, files[0]);
+      const data = await withSession((sid) => uploadCelbezetting(sid, files[0]));
+      uploadedRef.current.cel = files[0];
       setCelFile(files[0].name);
       setCelCount(data.count);
     } catch (e: any) {
@@ -102,7 +169,8 @@ export default function Home() {
     setError(null);
     try {
       for (const file of files) {
-        const data = await uploadDispatch(sessionId, file);
+        const data = await withSession((sid) => uploadDispatch(sid, file));
+        uploadedRef.current.dispatch.push({ file, category });
         setDispatchFiles((prev) => [
           ...prev,
           { filename: file.name, rows: data.rows, index: prev.length, category },
@@ -118,7 +186,8 @@ export default function Home() {
   async function handleRemoveDispatch(index: number) {
     if (!sessionId) return;
     try {
-      await removeDispatch(sessionId, index);
+      await withSession((sid) => removeDispatch(sid, index));
+      uploadedRef.current.dispatch.splice(index, 1);
       setDispatchFiles((prev) => {
         const next = prev.filter((_, i) => i !== index);
         return next.map((f, i) => ({ ...f, index: i }));
@@ -133,7 +202,8 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      await uploadPaleislijst(sessionId, files[0]);
+      await withSession((sid) => uploadPaleislijst(sid, files[0]));
+      uploadedRef.current.paleis = files[0];
       setPaleisFile(files[0].name);
     } catch (e: any) {
       setError(e.message);
@@ -164,7 +234,7 @@ export default function Home() {
           voornaam: r.voornaam || null,
           bestemming: r.bestemming,
         }));
-      const data = await generate(sessionId, entries, targetDate);
+      const data = await withSession((sid) => generate(sid, entries, targetDate));
       setResult(data);
       fireConfetti();
     } catch (e: any) {
@@ -176,7 +246,8 @@ export default function Home() {
   }
 
   function reset() {
-    setSessionId(null);
+    uploadedRef.current = { cel: null, dispatch: [], paleis: null };
+    applySessionId(null);
     setCelFile(null);
     setCelCount(null);
     setDispatchFiles([]);
@@ -285,6 +356,33 @@ export default function Home() {
               </div>
             )}
 
+            {/* Sessie verlopen — bestanden worden automatisch teruggezet */}
+            {recovering && (
+              <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-500/[0.08] border border-blue-100 dark:border-blue-400/20 rounded-xl px-5 py-3.5">
+                <svg className="w-5 h-5 spin flex-shrink-0 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" d="M12 3a9 9 0 1 0 9 9" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Verbinding met de server hersteld
+                  </p>
+                  <p className="text-xs text-blue-600/80 dark:text-blue-400/70 mt-0.5">
+                    Je bestanden worden opnieuw geladen — je hoeft niets over te doen.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Herstel gelukt — verdwijnt vanzelf */}
+            {recovered && !recovering && (
+              <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-500/[0.08] border border-emerald-100 dark:border-emerald-400/20 rounded-xl px-5 py-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-400/20 flex items-center justify-center text-emerald-500 text-xs font-bold flex-shrink-0">✓</span>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300 flex-1">
+                  Alles staat er terug — je kan gewoon verder.
+                </span>
+              </div>
+            )}
+
             {/* Sessie klaar — korte bevestiging tot de eerste upload */}
             {!waking && sessionId && !celFile && wakeSeconds > 3 && (
               <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-500/[0.08] border border-emerald-100 dark:border-emerald-400/20 rounded-xl px-5 py-3">
@@ -317,7 +415,7 @@ export default function Home() {
                 <FileSuccess
                   name={celFile}
                   meta={`${celCount} gedetineerden geladen`}
-                  onReplace={() => { setCelFile(null); setCelCount(null); }}
+                  onReplace={() => { uploadedRef.current.cel = null; setCelFile(null); setCelCount(null); }}
                 />
               ) : (
                 <DropZone label="Upload celbezetting (.xlsx)" onFiles={handleCelbezetting}
@@ -352,7 +450,8 @@ export default function Home() {
             {/* Step 5 — Paleislijst */}
             <Card step="5" title="Paleislijst">
               {paleisFile ? (
-                <FileSuccess name={paleisFile} onReplace={() => setPaleisFile(null)} />
+                <FileSuccess name={paleisFile}
+                  onReplace={() => { uploadedRef.current.paleis = null; setPaleisFile(null); }} />
               ) : (
                 <DropZone label="Upload paleislijst (.xlsx)" onFiles={handlePaleislijst}
                   uploading={loading} disabled={loading || !celFile} />

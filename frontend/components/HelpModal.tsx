@@ -46,14 +46,22 @@ export default function HelpModal({ onClose }: Props) {
         {/* Content */}
         <div className="bg-white dark:bg-[#0D1424] px-6 py-5 space-y-5 text-sm">
 
-          {/* Warning */}
-          <div className="flex gap-3 bg-amber-50 dark:bg-amber-400/[0.07] border border-amber-100 dark:border-amber-400/20 rounded-xl px-4 py-3.5">
-            <span className="text-amber-500 text-base mt-0.5 flex-shrink-0">⚠</span>
-            <p className="text-[13px] text-slate-600 dark:text-slate-300">
-              <span className="font-semibold text-amber-700 dark:text-amber-400">Server soms inactief</span>
-              {" "}— de backend slaapt na een periode zonder gebruik.
-              Krijg je een foutmelding? Wacht 20–30 seconden en probeer opnieuw.
-            </p>
+          {/* Server info — de tool vangt slaap en sessieverlies zelf op */}
+          <div className="flex gap-3 bg-blue-50 dark:bg-blue-400/[0.07] border border-blue-100 dark:border-blue-400/20 rounded-xl px-4 py-3.5">
+            <span className="text-blue-500 text-base mt-0.5 flex-shrink-0">ⓘ</span>
+            <div className="text-[13px] text-slate-600 dark:text-slate-300 space-y-1.5">
+              <p>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">De server slaapt bij inactiviteit</span>
+                {" "}— open je de tool als eerste die nacht, dan kan het ongeveer een minuut
+                duren voor hij wakker is. Je ziet dan een balk met een teller.
+                Gewoon laten staan: verversen of opnieuw klikken helpt niet en is niet nodig.
+              </p>
+              <p>
+                Val je tijdens het werk lang stil, dan kan de verbinding wegvallen.
+                De tool zet je geüploade bestanden dan zelf terug — je krijgt kort een
+                melding te zien en kan meteen verder.
+              </p>
+            </div>
           </div>
 
           {/* Steps */}
@@ -65,11 +73,11 @@ export default function HelpModal({ onClose }: Props) {
               { n: "1", label: "Celbezetting", required: true,
                 text: "Upload de dagelijkse celbezetting (.xlsx). Gebruikt voor validatie en correctie van namen en celnummers." },
               { n: "2", label: "Dispatch-bestanden", required: true,
-                text: "Upload één of meerdere dienst-bestanden. De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, islamitische bijeenkomst, etc." },
+                text: "Upload één of meerdere dienst-bestanden (.xlsx of .pdf). De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, deelnemerslijsten, islamitische bijeenkomst, etc." },
               { n: "3", label: "Agenda / Hoorzitting", required: false,
                 text: "Upload het hoorzittingsbestand (met RAD-kolom). Uur wordt automatisch 10:00, bestemming 'Hoorzitting'. BVM/IBVR-rijen worden overgeslagen." },
               { n: "4", label: "Gereserveerde bezoeken", required: false,
-                text: "Upload de bezoekerslijst. De tool leest de shift als uur en 'type bezoek' als bestemming. Gedetineerden met meerdere bezoekers in dezelfde shift staan maar 1× op de lijst." },
+                text: "Upload de bezoekerslijst (.xlsx of .pdf). De tool leest de shift als uur en 'type bezoek' als bestemming. Gedetineerden met meerdere bezoekers in dezelfde shift staan maar 1× op de lijst." },
               { n: "5", label: "Paleislijst", required: false,
                 text: "Upload de paleislijst voor rechtbanktransport. Bestemmingen worden automatisch 'paleis', 'uithaling' of 'medische uithaling'." },
               { n: "6", label: "Manuele invoer", required: false,
@@ -122,8 +130,8 @@ export default function HelpModal({ onClose }: Props) {
             {[
               "Gedetineerden in cellen 430–434 (strafcel) verschijnen enkel bij essentiële bestemmingen.",
               "Dubbele rijen (zelfde naam + uur + activiteit) worden automatisch gefilterd.",
-              "Rust- en ATV-rijen in keuken/magazijn worden overgeslagen.",
-              "De tool herkent .xls én .xlsx bestanden.",
+              "Rust-, ATV- en Ziek-rijen in keuken/magazijn worden overgeslagen.",
+              "De tool herkent .xls, .xlsx én .pdf bestanden.",
             ].map((tip, i) => (
               <p key={i} className="text-[12px] text-slate-500 dark:text-slate-400 flex gap-2">
                 <span className="text-slate-300 dark:text-slate-600 flex-shrink-0">·</span>
