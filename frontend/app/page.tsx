@@ -17,6 +17,8 @@ import {
 } from "@/lib/api";
 import { ManualRow, DispatchFile, GenerateResult } from "@/lib/types";
 import HelpModal from "@/components/HelpModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { beschrijfDatum } from "@/lib/datum";
 
 const LOADING_MESSAGES = [
   "Cellen worden gecheckt…",
@@ -52,6 +54,10 @@ export default function Home() {
   const [wakeSeconds, setWakeSeconds] = useState(0);
   const [recovering, setRecovering] = useState(false);
   const [recovered, setRecovered] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string; message: string; confirmLabel?: string;
+    tone?: "danger" | "normal"; onConfirm: () => void;
+  } | null>(null);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // De backend bewaart sessies alleen in het geheugen. Slaapt of herstart
@@ -165,6 +171,27 @@ export default function Home() {
 
   async function handleDispatch(files: File[], category: "dispatch" | "agenda" | "bezoek" = "dispatch") {
     if (!sessionId) return;
+
+    // Hetzelfde bestand twee keer opladen is 's nachts zo gebeurd en levert
+    // dubbele rijen op. Even laten bevestigen in plaats van stil toevoegen.
+    const dubbel = files.filter((f) =>
+      uploadedRef.current.dispatch.some((d) => d.file.name === f.name),
+    );
+    if (dubbel.length) {
+      setConfirmDialog({
+        title: dubbel.length === 1 ? "Dit bestand staat er al" : "Deze bestanden staan er al",
+        message:
+          `${dubbel.map((f) => f.name).join(", ")} — al eerder toegevoegd. ` +
+          "Opnieuw toevoegen kan dubbele rijen op de dispatchlijst geven.",
+        confirmLabel: "Toch toevoegen",
+        onConfirm: () => { setConfirmDialog(null); void doDispatchUpload(files, category); },
+      });
+      return;
+    }
+    await doDispatchUpload(files, category);
+  }
+
+  async function doDispatchUpload(files: File[], category: "dispatch" | "agenda" | "bezoek") {
     setLoading(true);
     setError(null);
     try {
@@ -246,6 +273,18 @@ export default function Home() {
   }
 
   function reset() {
+    setConfirmDialog({
+      title: "Nieuwe lijst starten?",
+      message:
+        "Alle geüploade bestanden en je manuele invoer worden gewist. " +
+        "Dit kan niet ongedaan gemaakt worden.",
+      confirmLabel: "Ja, opnieuw beginnen",
+      tone: "danger",
+      onConfirm: () => { setConfirmDialog(null); doReset(); },
+    });
+  }
+
+  function doReset() {
     uploadedRef.current = { cel: null, dispatch: [], paleis: null };
     applySessionId(null);
     setCelFile(null);
@@ -257,6 +296,10 @@ export default function Home() {
     setError(null);
     startSession();
   }
+
+  const datum = beschrijfDatum(targetDate);
+  const totaalRijen = dispatchFiles.reduce((n, f) => n + f.rows, 0);
+  const manueleRijen = manualRows.filter((r) => r.naam.trim()).length;
 
   if (!authed) {
     return <AuthGate onAuth={() => setAuthed(true)} />;
@@ -302,6 +345,16 @@ export default function Home() {
 
         <Footer onHelp={() => setShowHelp(true)} />
         {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          tone={confirmDialog.tone}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
       </div>
     );
   }
@@ -415,7 +468,17 @@ export default function Home() {
                 <FileSuccess
                   name={celFile}
                   meta={`${celCount} gedetineerden geladen`}
-                  onReplace={() => { uploadedRef.current.cel = null; setCelFile(null); setCelCount(null); }}
+                  onReplace={() => setConfirmDialog({
+                    title: "Celbezetting vervangen?",
+                    message: "De stappen hieronder blijven staan, maar je moet eerst een nieuwe celbezetting opladen voor je verder kan.",
+                    confirmLabel: "Vervangen",
+                    onConfirm: () => {
+                      setConfirmDialog(null);
+                      uploadedRef.current.cel = null;
+                      setCelFile(null);
+                      setCelCount(null);
+                    },
+                  })}
                 />
               ) : (
                 <DropZone label="Upload celbezetting (.xlsx)" onFiles={handleCelbezetting}
@@ -465,6 +528,38 @@ export default function Home() {
 
             {/* Step 7 — Date + Generate */}
             <Card step="7" title="Datum en genereren" required>
+              {celFile && dispatchFiles.length > 0 && (
+                <div className="mb-5 rounded-xl border border-slate-100 dark:border-white/[0.07] bg-slate-50 dark:bg-white/[0.02] px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+                    Klaar om te genereren
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-600 dark:text-slate-300">
+                    <span><span className="font-semibold">{celCount}</span> gedetineerden in de celbezetting</span>
+                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                    <span><span className="font-semibold">{dispatchFiles.length}</span> {dispatchFiles.length === 1 ? "bestand" : "bestanden"}</span>
+                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                    <span><span className="font-semibold">{totaalRijen}</span> rijen</span>
+                    {manueleRijen > 0 && (
+                      <>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span><span className="font-semibold">{manueleRijen}</span> manueel</span>
+                      </>
+                    )}
+                    {paleisFile && (
+                      <>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span>paleislijst</span>
+                      </>
+                    )}
+                    {datum.geldig && (
+                      <>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span>voor <span className="font-semibold">{datum.volledig}</span></span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="flex items-end gap-4 flex-wrap">
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
@@ -477,6 +572,20 @@ export default function Home() {
                     className="border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition"
                     style={{ focusRingColor: "rgba(61,124,247,0.4)" } as React.CSSProperties}
                   />
+                  {datum.geldig && (
+                    <p className="mt-2 text-xs flex items-center gap-2 flex-wrap">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">{datum.volledig}</span>
+                      {datum.weekendTarief ? (
+                        <span className="text-[10px] font-semibold px-2 py-px rounded-full bg-amber-100 dark:bg-amber-400/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-400/25">
+                          {datum.feestdag ?? "weekend"} · weekenduren
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-px rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]">
+                          weekdag
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={handleGenerate}
@@ -519,6 +628,16 @@ export default function Home() {
 
       <Footer onHelp={() => setShowHelp(true)} />
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          tone={confirmDialog.tone}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }
