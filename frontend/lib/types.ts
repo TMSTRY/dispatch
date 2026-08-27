@@ -34,6 +34,8 @@ export interface GenerateResult {
   filename: string;
   corrections: CorrectionEntry[];
   warnings: string[];
+  /** Informatieve meldingen, bv. hoeveel videobezoeken op de gekozen dag vielen. */
+  notices?: string[];
   unmatched: UnmatchedEntry[];
 }
 

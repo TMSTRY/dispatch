@@ -73,7 +73,7 @@ export default function HelpModal({ onClose }: Props) {
               { n: "1", label: "Celbezetting", required: true,
                 text: "Upload de dagelijkse celbezetting (.xlsx). Gebruikt voor validatie en correctie van namen en celnummers." },
               { n: "2", label: "Dispatch-bestanden", required: true,
-                text: "Upload één of meerdere dienst-bestanden (.xlsx of .pdf). De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, deelnemerslijsten, islamitische bijeenkomst, etc." },
+                text: "Upload één of meerdere dienst-bestanden (.xlsx of .pdf). De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, deelnemerslijsten, islamitische bijeenkomst, videobezoek en intern bezoek." },
               { n: "3", label: "Agenda / Hoorzitting", required: false,
                 text: "Upload het hoorzittingsbestand (met RAD-kolom). Uur wordt automatisch 10:00, bestemming 'Hoorzitting'. BVM/IBVR-rijen worden overgeslagen." },
               { n: "4", label: "Gereserveerde bezoeken", required: false,
@@ -132,6 +132,8 @@ export default function HelpModal({ onClose }: Props) {
               "Dubbele rijen (zelfde naam + uur + activiteit) worden automatisch gefilterd.",
               "Rust-, ATV- en Ziek-rijen in keuken/magazijn worden overgeslagen.",
               "De tool herkent .xls, .xlsx én .pdf bestanden.",
+              "Videobezoek: je mag het volledige bestand opladen — enkel de afspraken van de gekozen datum komen op de lijst.",
+              "Intern bezoek: telt alleen mee op de dagen die bovenaan dat bestand staan (nu maandag, woensdag en vrijdag om 16u15). Beide gedetineerden van een rij komen op de lijst.",
             ].map((tip, i) => (
               <p key={i} className="text-[12px] text-slate-500 dark:text-slate-400 flex gap-2">
                 <span className="text-slate-300 dark:text-slate-600 flex-shrink-0">·</span>

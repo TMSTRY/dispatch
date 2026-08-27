@@ -58,6 +58,63 @@ def _is_weekend_or_holiday(d: date) -> bool:
     """True for Saturday, Sunday, or Belgian public holiday."""
     return d.weekday() >= 5 or d in _belgian_holidays(d.year)
 
+
+_DAGNAMEN = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"]
+
+
+def _filter_op_datum(rows: list[dict], target_date: date) -> tuple[list[dict], list[str]]:
+    """
+    Houdt van datumgebonden bronnen alleen over wat op target_date valt.
+
+    - 'visit_date' (videobezoek): het bestand bevat alle weken, we nemen de dag.
+    - 'only_weekdays' (intern bezoek): geldt alleen op vaste dagen; het bestand
+      zelf bevat geen datum.
+
+    Rijen zonder een van beide sleutels blijven ongemoeid. Geeft ook korte
+    meldingen terug, zodat een lege uitkomst verklaard is in plaats van
+    stilzwijgend — anders lijkt een upload gelukt terwijl er niets doorkomt.
+    """
+    bewaard: list[dict] = []
+    weg_datum: dict[str, int] = {}
+    weg_dag: dict[str, int] = {}
+    geteld: dict[str, int] = {}
+
+    for row in rows:
+        bron = row.get("source", "bron")
+
+        visit_date = row.get("visit_date")
+        if visit_date is not None:
+            if visit_date != target_date:
+                weg_datum[bron] = weg_datum.get(bron, 0) + 1
+                continue
+            geteld[bron] = geteld.get(bron, 0) + 1
+
+        dagen = row.get("only_weekdays")
+        if dagen and target_date.weekday() not in dagen:
+            weg_dag[bron] = weg_dag.get(bron, 0) + 1
+            continue
+
+        bewaard.append(row)
+
+    notices: list[str] = []
+    dagnaam = _DAGNAMEN[target_date.weekday()]
+
+    for bron, aantal in weg_datum.items():
+        gevonden = geteld.get(bron, 0)
+        if gevonden:
+            notices.append(f"{bron}: {gevonden} afspraken op {dagnaam} {target_date:%d/%m}.")
+        else:
+            notices.append(
+                f"{bron}: geen enkele afspraak op {dagnaam} {target_date:%d/%m} "
+                f"({aantal} afspraken op andere dagen)."
+            )
+    for bron, aantal in weg_dag.items():
+        notices.append(
+            f"{bron}: {aantal} regels overgeslagen — deze lijst geldt niet op {dagnaam}."
+        )
+
+    return bewaard, notices
+
 app = FastAPI(title="Dispatch Generator", version="1.0.0")
 
 _ALLOWED_ORIGINS = [
@@ -151,7 +208,18 @@ async def upload_dispatch(session_id: str, file: UploadFile = File(...)):
             if not rows:
                 rows = parse_activiteit_pdf(raw, source_name=source_name)
         else:
-            rows = parse_dispatch(raw, source_name=source_name)
+            # Videobezoek en intern bezoek hebben een eigen indeling en worden
+            # herkend aan hun inhoud, niet aan de bestandsnaam.
+            from parsers.detect import detect_kind
+            kind = detect_kind(raw, source_name)
+            if kind == "videovisit":
+                from parsers.videovisit import parse_videovisit
+                rows = parse_videovisit(raw, source_name=source_name)
+            elif kind == "intern_bezoek":
+                from parsers.intern_bezoek import parse_intern_bezoek
+                rows = parse_intern_bezoek(raw, source_name=source_name)
+            else:
+                rows = parse_dispatch(raw, source_name=source_name)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Fout bij verwerking dispatch-bestand: {e}")
     session["dispatch_files"].append({"filename": source_name, "rows": rows})
@@ -268,6 +336,10 @@ async def generate(session_id: str, request: GenerateRequest):
         if row.get("dual_uur"):
             row["uur"] = row["uur_we"] if use_weekend else row["uur_wd"]
 
+    # Datumgebonden bronnen terugbrengen tot de gekozen dag. Het videobezoek-
+    # bestand bevat alle weken; het intern bezoek loopt alleen op vaste dagen.
+    all_rows, notices = _filter_op_datum(all_rows, target_date)
+
     # Diagnostic logging — visible in Render logs after each generate
     from collections import Counter
     src_counts = Counter(r.get("source", "?") for r in all_rows)
@@ -301,6 +373,7 @@ async def generate(session_id: str, request: GenerateRequest):
             f"Geen celbezetting gevonden voor: {u.naam} {u.voornaam or ''} (cel {u.celnr}, bron: {u.source})"
             for u in unmatched
         ],
+        notices=notices,
         unmatched=unmatched,
     )
 

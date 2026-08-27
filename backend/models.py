@@ -37,4 +37,5 @@ class GenerateResponse(BaseModel):
     filename: str
     corrections: list[CorrectionEntry]
     warnings: list[str]
+    notices: list[str] = []
     unmatched: list[UnmatchedEntry]

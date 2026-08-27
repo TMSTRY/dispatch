@@ -115,6 +115,26 @@ export default function ResultsPreview({ result, onBack, onReset }: Props) {
         </div>
       </div>
 
+      {/* ── Meldingen over datumgebonden bronnen ──────────────────────────── */}
+      {result.notices && result.notices.length > 0 && (
+        <div className="glass rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Datumgebonden bestanden
+            </h3>
+          </div>
+          <ul className="px-6 py-4 space-y-2">
+            {result.notices.map((n, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-[13px] text-slate-500 dark:text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-1.5 flex-shrink-0" />
+                {n}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── Corrections ──────────────────────────────────────────────────── */}
       {result.corrections.length > 0 && (
         <div className="glass rounded-2xl overflow-hidden">
