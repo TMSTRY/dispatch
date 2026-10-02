@@ -479,7 +479,7 @@ export default function Home() {
             {/* Step 2 — Dispatch */}
             <Card step="2" title="Dispatch-bestanden" required
               badge={dispatchFiles.filter(f => f.category === "dispatch").length}>
-              <DropZone label="Upload dispatch-bestanden (.xlsx / .pdf)" multiple accept=".xlsx,.xls,.pdf"
+              <DropZone label="Upload dispatch-bestanden (.xlsx / .xltx / .pdf)" multiple accept=".xlsx,.xls,.xltx,.pdf"
                 onFiles={(f) => handleDispatch(f, "dispatch")} uploading={loading} disabled={loading || !celFile} />
               <FileList files={dispatchFiles.filter(f => f.category === "dispatch")} onRemove={handleRemoveDispatch} />
             </Card>

@@ -73,7 +73,7 @@ export default function HelpModal({ onClose }: Props) {
               { n: "1", label: "Celbezetting", required: true,
                 text: "Upload de dagelijkse celbezetting (.xlsx). Gebruikt voor validatie en correctie van namen en celnummers." },
               { n: "2", label: "Dispatch-bestanden", required: true,
-                text: "Upload één of meerdere dienst-bestanden (.xlsx of .pdf). De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, deelnemerslijsten, islamitische bijeenkomst, videobezoek en intern bezoek." },
+                text: "Upload één of meerdere dienst-bestanden (.xlsx, .xltx of .pdf). De tool herkent automatisch reguliere lijsten, keuken, magazijn, betekening directeur, griffie, meditatie, deelnemerslijsten, islamitische bijeenkomst, videobezoek en intern bezoek." },
               { n: "3", label: "Agenda / Hoorzitting", required: false,
                 text: "Upload het hoorzittingsbestand (met RAD-kolom). Uur wordt automatisch 10:00, bestemming 'Hoorzitting'. BVM/IBVR-rijen worden overgeslagen." },
               { n: "4", label: "Gereserveerde bezoeken", required: false,
